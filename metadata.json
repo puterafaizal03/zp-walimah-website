@@ -1,0 +1,6 @@
+{
+  "name": "Majlis Walimatulurus — Putera Faizal Hakimi & Nur Zaireen Farisya",
+  "description": "Kad jemputan perkahwinan digital bertema Royal Malay Palace untuk Majlis Walimatulurus Putera Faizal Hakimi Bin Mohd Rafael & Nur Zaireen Farisya Binti Mohd Zaidi pada Sabtu, 12 Disember 2026 di Laman Ratu Event Hall.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

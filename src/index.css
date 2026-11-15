@@ -1,0 +1,237 @@
+@import "tailwindcss";
+
+@theme {
+  --color-emerald-palace: #064E3B;
+  --color-emerald-deep: #032B20;
+  --color-emerald-rich: #043B2C;
+  --color-gold-antique: #C6A15B;
+  --color-gold-light: #E6CB8E;
+  --color-gold-bronze: #8E6D31;
+  --color-ivory-warm: #F5F0E5;
+  --color-ivory-soft: #FAF7F0;
+  --color-ink-palace: #16261F;
+
+  --font-names: "Cormorant Garamond", Georgia, serif;
+  --font-heading: "Bodoni Moda", Georgia, serif;
+  --font-script: "Great Vibes", cursive;
+  --font-sans: "Montserrat", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-arabic: "Amiri", "Traditional Arabic", serif;
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    background-color: #064E3B;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  h1, h2, h3 {
+    font-family: var(--font-heading);
+  }
+}
+
+.font-names {
+  font-family: var(--font-names);
+}
+
+.font-heading {
+  font-family: var(--font-heading);
+}
+
+.font-script {
+  font-family: var(--font-script);
+}
+
+.font-body {
+  font-family: var(--font-sans);
+}
+
+/* Antique Gold Glowing Text Effect for Full Couple Names */
+.text-gold-glow {
+  color: #E6CB8E;
+  text-shadow: 0 2px 14px rgba(198, 161, 91, 0.45), 0 1px 2px rgba(3, 43, 32, 0.75);
+}
+
+.text-gold-emboss {
+  background: linear-gradient(180deg, #F4E2B8 0%, #C6A15B 55%, #9B7938 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 2px 8px rgba(198, 161, 91, 0.35));
+}
+
+/* Traditional Malay Songket Diamond Lattice Pattern (Light Ivory Variant) */
+.bg-songket-ivory {
+  background-color: #F5F0E5;
+  background-image: url("data:image/svg+xml,%3Csvg width='48' height='48' viewBox='0 0 48 48' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23C6A15B' stroke-width='0.6' stroke-opacity='0.14'%3E%3Cpath d='M24 0L48 24L24 48L0 24Z'/%3E%3Cpath d='M24 8L40 24L24 40L8 24Z'/%3E%3Ccircle cx='24' cy='24' r='2.5'/%3E%3Cpath d='M0 0L6 6M48 0L42 6M0 48L6 42M48 48L42 42'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* Traditional Malay Songket Pattern (Deep Emerald Variant) */
+.bg-songket-emerald {
+  background-color: #064E3B;
+  background-image: url("data:image/svg+xml,%3Csvg width='56' height='56' viewBox='0 0 56 56' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23C6A15B' stroke-width='0.75' stroke-opacity='0.13'%3E%3Cpath d='M28 0L56 28L28 56L0 28Z'/%3E%3Cpath d='M28 10L46 28L28 46L10 28Z'/%3E%3Cpath d='M28 18L38 28L28 38L18 28Z'/%3E%3Ccircle cx='28' cy='28' r='2' fill='%23C6A15B' fill-opacity='0.12'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* 3D Envelope Perspective */
+.envelope-perspective {
+  perspective: 1400px;
+}
+
+.envelope-flap {
+  transform-origin: top center;
+  transform-style: preserve-3d;
+  transition: transform 0.95s cubic-bezier(0.22, 1, 0.36, 1);
+  backface-visibility: hidden;
+}
+
+.envelope-flap-open {
+  transform: rotateX(-176deg);
+}
+
+/* Gold Light Sweep Shimmer */
+@keyframes goldSweep {
+  0% {
+    transform: translateX(-140%) skewX(-18deg);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.8;
+  }
+  80% {
+    opacity: 0.65;
+  }
+  100% {
+    transform: translateX(220%) skewX(-18deg);
+    opacity: 0;
+  }
+}
+
+.animate-gold-sweep {
+  animation: goldSweep 1.65s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Continuous Subtle Gold Shimmer across Seal / Frame */
+@keyframes royalSheen {
+  0%, 100% {
+    opacity: 0.35;
+    transform: translateX(-60%) rotate(25deg);
+  }
+  50% {
+    opacity: 0.75;
+    transform: translateX(60%) rotate(25deg);
+  }
+}
+
+.animate-royal-sheen {
+  animation: royalSheen 5.5s ease-in-out infinite;
+}
+
+/* Gentle Jasmine & Rose Sway */
+@keyframes floralFloat {
+  0%, 100% {
+    transform: translateY(0px) rotate(-1.5deg);
+  }
+  50% {
+    transform: translateY(-4px) rotate(1.5deg);
+  }
+}
+
+.animate-floral-float {
+  animation: floralFloat 5.5s ease-in-out infinite;
+}
+
+/* Floating Jasmine Petals (GPU Composited Only) */
+@keyframes petalDrift {
+  0% {
+    transform: translate3d(0, -10vh, 0) rotate(0deg) scale(0.9);
+    opacity: 0;
+  }
+  12% {
+    opacity: 0.85;
+  }
+  50% {
+    transform: translate3d(var(--drift-x, 24px), 45vh, 0) rotate(140deg) scale(1);
+    opacity: 0.75;
+  }
+  88% {
+    opacity: 0.65;
+  }
+  100% {
+    transform: translate3d(calc(var(--drift-x, 24px) * -0.5), 106vh, 0) rotate(290deg) scale(0.85);
+    opacity: 0;
+  }
+}
+
+.animate-petal-drift {
+  animation: petalDrift var(--petal-duration, 13s) linear var(--petal-delay, 0s) infinite;
+  will-change: transform, opacity;
+}
+
+/* Subtle Gold Sparkles */
+@keyframes goldSparkle {
+  0%, 100% {
+    transform: scale(0.5) translate3d(0, 0, 0);
+    opacity: 0.15;
+  }
+  50% {
+    transform: scale(1.2) translate3d(0, -8px, 0);
+    opacity: 0.9;
+  }
+}
+
+.animate-gold-sparkle {
+  animation: goldSparkle var(--sparkle-duration, 4s) ease-in-out var(--sparkle-delay, 0s) infinite;
+  will-change: transform, opacity;
+}
+
+/* Graceful Botanical Sway */
+@keyframes botanicalSway {
+  0%, 100% {
+    transform: rotate(-1.2deg) translateY(0px);
+  }
+  50% {
+    transform: rotate(1.2deg) translateY(-2px);
+  }
+}
+
+.animate-botanical-sway {
+  animation: botanicalSway 6.5s ease-in-out infinite;
+  transform-origin: top center;
+}
+
+/* Ambient Halo Glow */
+@keyframes softAura {
+  0%, 100% {
+    opacity: 0.45;
+    transform: scale(0.98);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.04);
+  }
+}
+
+.animate-soft-aura {
+  animation: softAura 5s ease-in-out infinite;
+}
+
+/* Respect User Motion Preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .animate-petal-drift,
+  .animate-gold-sparkle,
+  .animate-botanical-sway,
+  .animate-soft-aura,
+  .animate-royal-sheen,
+  .animate-floral-float {
+    animation: none !important;
+  }
+}
