@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { WEDDING_CONFIG } from '../config/weddingConfig';
-import { AwanLaratCorner, MalayPalaceCrown, RoyalDivider } from './RoyalOrnaments';
+import { AwanLaratCorner, MalayPalaceCrown, MonogramZP, RoyalDivider } from './RoyalOrnaments';
 import jasmineRoseGarland from '../assets/images/jasmine_rose_garland_1794719929434.jpg';
 
 /**
@@ -24,15 +24,34 @@ const OrnatePortraitFrame: React.FC = () => {
         {/* Inner Deep Emerald Bevel */}
         <div className="relative p-2 rounded-t-[128px] rounded-b-xl bg-[#064E3B]">
           {/* Gold Hairline Inner Filigree */}
-          <div className="relative aspect-[3/4] w-full rounded-t-[118px] rounded-b-lg border border-[#C6A15B]/80 overflow-hidden bg-songket-ivory flex flex-col items-center justify-center">
+          <div className="relative aspect-[5/6] w-full rounded-t-[122px] rounded-b-lg border border-[#C6A15B]/85 overflow-hidden bg-[#FAF7F0] flex flex-col items-center justify-center">
             {hasPhoto ? (
-              <img
-                src={WEDDING_CONFIG.couple.couplePortraitUrl}
-                alt={WEDDING_CONFIG.couple.couplePortraitAlt}
-                referrerPolicy="no-referrer"
-                onError={() => setImgError(true)}
-                className="h-full w-full object-cover"
-              />
+              <div className="relative h-full w-full bg-gradient-to-b from-[#FAF7F0] via-[#F7F2E7] to-[#EFE7D6] overflow-hidden">
+                <img
+                  src={WEDDING_CONFIG.couple.couplePortraitUrl}
+                  alt={WEDDING_CONFIG.couple.couplePortraitAlt}
+                  referrerPolicy="no-referrer"
+                  onError={() => setImgError(true)}
+                  className="h-full w-full object-cover object-[48%_15%] scale-[0.98] mix-blend-multiply transition-transform duration-700"
+                />
+                {/* Soft inner warm vignette + gold shimmer border to harmonize with frame */}
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-0 rounded-t-[122px] rounded-b-lg shadow-[inset_0_0_24px_rgba(198,161,91,0.22)]"
+                />
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-[#F5F0E5]/85 to-transparent"
+                />
+                <AwanLaratCorner
+                  position="bl"
+                  className="pointer-events-none absolute bottom-1.5 left-1.5 w-8 h-8 text-[#C6A15B]/75"
+                />
+                <AwanLaratCorner
+                  position="br"
+                  className="pointer-events-none absolute bottom-1.5 right-1.5 w-8 h-8 text-[#C6A15B]/75"
+                />
+              </div>
             ) : (
               /* EMPTY ORNATE GOLD PORTRAIT FRAME PLACEHOLDER (NO PEOPLE / NO PHOTOS) */
               <div className="relative h-full w-full flex flex-col items-center justify-center px-6 py-8 text-center">
@@ -58,15 +77,13 @@ const OrnatePortraitFrame: React.FC = () => {
                 <div className="relative z-10 flex flex-col items-center">
                   <MalayPalaceCrown className="w-28 h-9 text-[#C6A15B] mb-3" />
 
-                  {/* Reserved Z&P Crest Medallion */}
+                  {/* Reserved ZP Crest Medallion */}
                   <div className="w-24 h-24 rounded-full border border-[#C6A15B]/85 bg-[#04392B] shadow-inner flex flex-col items-center justify-center mb-4 relative overflow-hidden">
                     <div
                       aria-hidden="true"
                       className="absolute inset-0 bg-gradient-to-r from-transparent via-[#E6CB8E]/25 to-transparent animate-royal-sheen"
                     />
-                    <span className="relative z-10 font-heading text-2xl font-bold text-gold-glow tracking-wider">
-                      {WEDDING_CONFIG.couple.monogram}
-                    </span>
+                    <MonogramZP className="relative z-10 w-[68px] h-[56px]" label="Monogram Diraja ZP" />
                   </div>
 
                   <p className="font-heading text-base font-semibold text-[#064E3B] tracking-wide">
@@ -216,31 +233,35 @@ export const MainInvitation: React.FC = () => {
             >
               <div className="pointer-events-none absolute inset-2 rounded-xl border border-[#C6A15B]/35" />
 
-              {/* Animated Z&P Royal Crest */}
+              {/* Animated ZP Royal Crest */}
               <motion.div
                 initial={{ opacity: 0, scale: 0.75 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.75, delay: 0.42, ease: [0.16, 1, 0.3, 1] }}
-                className="relative z-10 mx-auto mb-5 w-16 h-16 sm:w-20 sm:h-20 rounded-full border border-[#E6CB8E]/80 bg-[#032B20] shadow-[0_0_24px_rgba(198,161,91,0.35)] flex items-center justify-center overflow-hidden"
+                className="relative z-10 mx-auto mb-5 w-[76px] h-[76px] sm:w-[88px] sm:h-[88px] rounded-full border border-[#E6CB8E]/80 bg-[#032B20] shadow-[0_0_26px_rgba(198,161,91,0.38)] flex items-center justify-center overflow-hidden"
               >
                 <span
                   aria-hidden="true"
                   className="absolute inset-0 bg-gradient-to-r from-transparent via-[#E6CB8E]/25 to-transparent animate-royal-sheen"
                 />
-                <span className="relative z-10 font-heading text-xl sm:text-2xl font-bold tracking-wider text-gold-glow">
-                  {WEDDING_CONFIG.couple.monogram}
-                </span>
+                <MonogramZP
+                  className="relative z-10 w-[56px] h-[46px] sm:w-[66px] sm:h-[54px]"
+                  label="Monogram Diraja ZP"
+                />
               </motion.div>
 
-              {/* Couple Full Names in Cormorant Garamond, Antique Gold with Subtle Glow */}
+              {/* Couple Full Names in Cormorant Garamond, Antique Gold with Subtle Glow (Bride First - Majlis Belah Perempuan) */}
               <div className="relative z-10 w-full space-y-3 sm:space-y-4">
                 <motion.h1
                   initial={{ opacity: 0, y: 18, letterSpacing: '0.01em' }}
                   animate={{ opacity: 1, y: 0, letterSpacing: '0.04em' }}
                   transition={{ duration: 0.95, delay: 0.48, ease: [0.16, 1, 0.3, 1] }}
-                  className="font-names font-bold text-gold-glow leading-[1.2] text-[clamp(1.25rem,4.7vw,2.1rem)] text-balance"
+                  className="font-names font-bold text-gold-glow leading-[1.18] text-[clamp(1.25rem,4.7vw,2.1rem)] text-balance"
                 >
-                  {WEDDING_CONFIG.couple.groomFullName}
+                  <span className="block">{WEDDING_CONFIG.couple.brideGivenName}</span>
+                  <span className="block text-[0.78em] tracking-[0.06em] mt-0.5 text-[#E6CB8E]/95">
+                    {WEDDING_CONFIG.couple.brideParentage}
+                  </span>
                 </motion.h1>
 
                 <motion.div
@@ -260,9 +281,12 @@ export const MainInvitation: React.FC = () => {
                   initial={{ opacity: 0, y: 18, letterSpacing: '0.01em' }}
                   animate={{ opacity: 1, y: 0, letterSpacing: '0.04em' }}
                   transition={{ duration: 0.95, delay: 0.66, ease: [0.16, 1, 0.3, 1] }}
-                  className="font-names font-bold text-gold-glow leading-[1.2] text-[clamp(1.25rem,4.7vw,2.1rem)] text-balance"
+                  className="font-names font-bold text-gold-glow leading-[1.18] text-[clamp(1.25rem,4.7vw,2.1rem)] text-balance"
                 >
-                  {WEDDING_CONFIG.couple.brideFullName}
+                  <span className="block">{WEDDING_CONFIG.couple.groomGivenName}</span>
+                  <span className="block text-[0.78em] tracking-[0.06em] mt-0.5 text-[#E6CB8E]/95">
+                    {WEDDING_CONFIG.couple.groomParentage}
+                  </span>
                 </motion.h2>
               </div>
             </motion.div>
@@ -282,9 +306,35 @@ export const MainInvitation: React.FC = () => {
             </motion.div>
           </div>
 
-          {/* Right / Bottom Empty Ornate Gold Portrait Frame */}
+          {/* Right / Bottom Ornate Gold Portrait Frame & Romantic Verse */}
           <div className="lg:col-span-5 flex flex-col items-center justify-center">
             <OrnatePortraitFrame />
+
+            {/* Sweet Romantic Malay Verse Alongside / Beneath Portrait Frame */}
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.85, delay: 0.78, ease: [0.16, 1, 0.3, 1] }}
+              className="mt-6 flex flex-col items-center text-center max-w-[305px] sm:max-w-[335px] px-2"
+            >
+              <p className="font-script text-[26px] sm:text-[30px] text-[#8E6D31] leading-none">
+                Dua Jiwa, Satu Doa
+              </p>
+
+              <div className="my-2.5 flex items-center justify-center gap-2.5">
+                <span className="h-[1px] w-12 bg-gradient-to-r from-transparent to-[#C6A15B]/80" />
+                <span className="w-1.5 h-1.5 rotate-45 bg-[#C6A15B]" />
+                <span className="h-[1px] w-12 bg-gradient-to-l from-transparent to-[#C6A15B]/80" />
+              </div>
+
+              <blockquote className="font-names italic text-[17px] sm:text-[18.5px] leading-[1.6] text-[#064E3B] text-balance">
+                &ldquo;Dari doa yang diam-diam dilangitkan, kini terjawab dengan sebuah ikatan suci. Bersamamu, seluruh perjalanan ini terasa paling sempurna.&rdquo;
+              </blockquote>
+
+              <p className="mt-3 font-body text-[11px] sm:text-xs font-medium uppercase tracking-[0.2em] text-[#8E6D31]">
+                Hingga Ke Syurga · Zaireen &amp; Putera
+              </p>
+            </motion.div>
           </div>
         </div>
       </motion.div>

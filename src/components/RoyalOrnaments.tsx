@@ -1,8 +1,124 @@
-import React from 'react';
+import React, { useId } from 'react';
 
 interface OrnamentProps {
   className?: string;
 }
+
+/**
+ * Bespoke Intertwined Royal "ZP" Monogram Crest
+ * High-contrast serif "Z" interwoven with a sweeping calligraphic "P"
+ * rendered in metallic antique gold with transparent weave cutouts.
+ */
+export const MonogramZP: React.FC<OrnamentProps & { label?: string }> = ({
+  className = '',
+  label,
+}) => {
+  const uid = useId().replace(/:/g, '');
+  const goldGradId = `zp-gold-${uid}`;
+  const lowerClipId = `zp-lower-clip-${uid}`;
+  const maskZId = `zp-mask-z-${uid}`;
+  const maskBowlId = `zp-mask-bowl-${uid}`;
+  const maskStemId = `zp-mask-stem-${uid}`;
+
+  // High-contrast Didone/Bodoni serif "Z" centered on 200x200 canvas
+  const zPath =
+    'M 86 66 L 139 66 L 94 143 L 114 143 C 130 143 139 136 143 122 L 137 148 L 74 148 L 121 70 L 106 70 C 90 70 82 78 78 92 Z';
+
+  // Sweeping calligraphic "P" upper bowl arching over the Z and tucking behind Z's diagonal
+  const pBowlPath =
+    'M 66 91 C 59 75 62 53 95 48 C 122 44 142 63 141 85 C 140 102 124 109 106 102';
+
+  // Sweeping calligraphic "P" stem + lower-left swash loop
+  const pStemSwashPath =
+    'M 168 59 C 159 43 139 43 123 66 C 113 80 99 107 83 129 C 69 148 50 156 36 141 C 23 128 30 105 52 102 C 69 100 86 104 98 100';
+
+  return (
+    <svg
+      viewBox="16 32 164 134"
+      fill="none"
+      role={label ? 'img' : undefined}
+      aria-label={label}
+      aria-hidden={label ? undefined : true}
+      className={`select-none drop-shadow-[0_2px_6px_rgba(2,29,21,0.55)] ${className}`}
+    >
+      <defs>
+        <linearGradient id={goldGradId} x1="15%" y1="10%" x2="85%" y2="90%">
+          <stop offset="0%" stopColor="#FFF0C4" />
+          <stop offset="32%" stopColor="#E6CB8E" />
+          <stop offset="68%" stopColor="#C6A15B" />
+          <stop offset="100%" stopColor="#9A7432" />
+        </linearGradient>
+
+        {/* Restrict Z knockout on P strokes to below y=80 so P passes cleanly OVER Z's top bar */}
+        <clipPath id={lowerClipId}>
+          <rect x="60" y="80" width="100" height="80" />
+        </clipPath>
+
+        {/* Mask for Z: cut gaps where P's upper bowl and upper stem weave in front */}
+        <mask id={maskZId} maskUnits="userSpaceOnUse">
+          <rect x="0" y="0" width="200" height="200" fill="white" />
+          <path
+            d="M 66 91 C 59 75 62 53 95 48 C 122 44 142 63 141 85"
+            stroke="black"
+            strokeWidth="8.5"
+            strokeLinecap="round"
+          />
+          <path
+            d="M 168 59 C 159 43 139 43 114 79"
+            stroke="black"
+            strokeWidth="8.5"
+            strokeLinecap="round"
+          />
+        </mask>
+
+        {/* Mask for P's upper bowl: stem passes in front near top-right; Z diagonal passes in front below y=80 */}
+        <mask id={maskBowlId} maskUnits="userSpaceOnUse">
+          <rect x="0" y="0" width="200" height="200" fill="white" />
+          <path
+            d="M 168 59 C 159 43 139 43 114 79"
+            stroke="black"
+            strokeWidth="8.5"
+            strokeLinecap="round"
+          />
+          <g clipPath={`url(#${lowerClipId})`}>
+            <path d={zPath} fill="black" stroke="black" strokeWidth="5.5" strokeLinejoin="round" />
+          </g>
+        </mask>
+
+        {/* Mask for P's stem & swash: Z diagonal passes in front below y=80 */}
+        <mask id={maskStemId} maskUnits="userSpaceOnUse">
+          <rect x="0" y="0" width="200" height="200" fill="white" />
+          <g clipPath={`url(#${lowerClipId})`}>
+            <path d={zPath} fill="black" stroke="black" strokeWidth="5.5" strokeLinejoin="round" />
+          </g>
+        </mask>
+      </defs>
+
+      {/* Center Bold Serif Z */}
+      <path d={zPath} fill={`url(#${goldGradId})`} mask={`url(#${maskZId})`} />
+
+      {/* Calligraphic P Upper Bowl */}
+      <path
+        d={pBowlPath}
+        stroke={`url(#${goldGradId})`}
+        strokeWidth="3.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        mask={`url(#${maskBowlId})`}
+      />
+
+      {/* Calligraphic P Stem & Lower-Left Swash */}
+      <path
+        d={pStemSwashPath}
+        stroke={`url(#${goldGradId})`}
+        strokeWidth="3.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        mask={`url(#${maskStemId})`}
+      />
+    </svg>
+  );
+};
 
 /**
  * Traditional Malay Awan Larat Corner Filigree SVG

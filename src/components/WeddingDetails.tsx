@@ -61,10 +61,10 @@ export const WeddingDetails: React.FC = () => {
 
   const googleCalendarHref = useMemo(() => {
     const title = encodeURIComponent(
-      `${WEDDING_CONFIG.event.title}: Putera Faizal Hakimi & Nur Zaireen Farisya`
+      `${WEDDING_CONFIG.event.title}: Nur Zaireen Farisya & Putera Faizal Hakimi`
     );
     const details = encodeURIComponent(
-      `Jemputan ke Majlis Walimatulurus ${WEDDING_CONFIG.couple.groomFullName} & ${WEDDING_CONFIG.couple.brideFullName}. Anjuran ${WEDDING_CONFIG.bridesParents.fatherName} & ${WEDDING_CONFIG.bridesParents.motherName}.`
+      `Jemputan ke Majlis Walimatulurus ${WEDDING_CONFIG.couple.brideFullName} & ${WEDDING_CONFIG.couple.groomFullName}. Anjuran ${WEDDING_CONFIG.bridesParents.fatherName} & ${WEDDING_CONFIG.bridesParents.motherName}.`
     );
     const location = encodeURIComponent(
       `${WEDDING_CONFIG.event.venueName}, ${WEDDING_CONFIG.event.fullAddress}`
@@ -81,12 +81,12 @@ export const WeddingDetails: React.FC = () => {
       'CALSCALE:GREGORIAN',
       'METHOD:PUBLISH',
       'BEGIN:VEVENT',
-      'UID:walimatulurus-faizal-farisya-20261212@royalmalaypalace',
+      'UID:walimatulurus-farisya-faizal-20261212@royalmalaypalace',
       'DTSTAMP:20261115T000000Z',
       'DTSTART:20261212T103000Z',
       'DTEND:20261212T150000Z',
-      `SUMMARY:${WEDDING_CONFIG.event.title} - Putera Faizal Hakimi & Nur Zaireen Farisya`,
-      `DESCRIPTION:Jemputan ke Majlis Walimatulurus ${WEDDING_CONFIG.couple.groomFullName} & ${WEDDING_CONFIG.couple.brideFullName}.`,
+      `SUMMARY:${WEDDING_CONFIG.event.title} - Nur Zaireen Farisya & Putera Faizal Hakimi`,
+      `DESCRIPTION:Jemputan ke Majlis Walimatulurus ${WEDDING_CONFIG.couple.brideFullName} & ${WEDDING_CONFIG.couple.groomFullName}.`,
       `LOCATION:${WEDDING_CONFIG.event.venueName}\\, ${WEDDING_CONFIG.event.fullAddress.replace(/,/g, '\\,')}`,
       'STATUS:CONFIRMED',
       'END:VEVENT',

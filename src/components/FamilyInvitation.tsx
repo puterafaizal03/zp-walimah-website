@@ -39,13 +39,24 @@ export const FamilyInvitation: React.FC = () => {
             Dengan segala hormat dan takzimnya
           </p>
 
-          {/* Exact Bride's Parents Names */}
-          <div className="mt-6 mb-6 space-y-1.5">
-            <h3 className="font-heading font-bold text-gold-glow tracking-wide text-[clamp(1.25rem,4.5vw,1.95rem)] text-balance">
+          {/* 1. BRIDE'S PARENTS — HOST FAMILY (DISPLAY FIRST / ABOVE THE COUPLE) */}
+          <p className="mt-6 font-body text-[11px] sm:text-xs uppercase tracking-[0.22em] text-[#C6A15B] font-semibold">
+            Tuan Rumah · Majlis Belah Perempuan
+          </p>
+
+          <div className="mt-4 mb-8 w-full flex flex-col items-center space-y-2.5 sm:space-y-3 text-center">
+            <h3 className="font-heading font-semibold text-gold-glow tracking-[0.03em] leading-snug text-[clamp(1rem,3.8vw,1.6rem)]">
               {WEDDING_CONFIG.bridesParents.fatherName}
             </h3>
-            <p className="font-script text-2xl text-[#C6A15B] leading-none py-0.5">dan</p>
-            <h3 className="font-heading font-bold text-gold-glow tracking-wide text-[clamp(1.25rem,4.5vw,1.95rem)] text-balance">
+            <div className="flex items-center justify-center gap-3 py-0.5" aria-hidden="true">
+              <span className="h-[1px] w-7 bg-[#C6A15B]/55" />
+              <span className="font-script text-2xl sm:text-3xl text-[#C6A15B] leading-none">
+                &amp;
+              </span>
+              <span className="h-[1px] w-7 bg-[#C6A15B]/55" />
+            </div>
+            <span className="sr-only">&amp;</span>
+            <h3 className="font-heading font-semibold text-gold-glow tracking-[0.03em] leading-snug text-[clamp(1rem,3.8vw,1.6rem)]">
               {WEDDING_CONFIG.bridesParents.motherName}
             </h3>
           </div>
@@ -55,20 +66,52 @@ export const FamilyInvitation: React.FC = () => {
             {WEDDING_CONFIG.invitationCopy.familyInvitationText}
           </p>
 
-          <RoyalDivider className="my-7" />
+          <RoyalDivider className="my-9 sm:my-10" />
 
-          {/* Reaffirming the Union in Cormorant Garamond Antique Gold */}
-          <div className="space-y-2.5 text-center w-full">
-            <p className="font-body text-xs uppercase tracking-[0.22em] text-[#C6A15B] font-semibold">
-              Mempelai yang Diraikan
+          {/* 2. BRIDE & 3. GROOM IN CORMORANT GARAMOND ANTIQUE GOLD */}
+          <div className="space-y-3.5 text-center w-full">
+            <div>
+              <p className="font-names font-bold text-gold-glow tracking-[0.04em] leading-[1.2] text-[clamp(1.25rem,4.5vw,1.95rem)] text-balance">
+                <span className="block">{WEDDING_CONFIG.couple.brideGivenName}</span>
+                <span className="block text-[0.78em] tracking-[0.06em] mt-0.5 text-[#E6CB8E]/95">
+                  {WEDDING_CONFIG.couple.brideParentage}
+                </span>
+              </p>
+            </div>
+
+            <p className="font-script text-2xl text-[#C6A15B] py-0.5">dengan pasangannya</p>
+
+            <div>
+              <p className="font-names font-bold text-gold-glow tracking-[0.04em] leading-[1.2] text-[clamp(1.25rem,4.5vw,1.95rem)] text-balance">
+                <span className="block">{WEDDING_CONFIG.couple.groomGivenName}</span>
+                <span className="block text-[0.78em] tracking-[0.06em] mt-0.5 text-[#E6CB8E]/95">
+                  {WEDDING_CONFIG.couple.groomParentage}
+                </span>
+              </p>
+            </div>
+          </div>
+
+          {/* 4. GROOM'S PARENTS (DISPLAY AFTER THE COUPLE WITH GENEROUS VERTICAL SEPARATION) */}
+          <div className="mt-10 sm:mt-12 pt-8 sm:pt-9 border-t border-[#C6A15B]/30 w-full flex flex-col items-center text-center">
+            <p className="font-body text-[11px] sm:text-xs uppercase tracking-[0.22em] text-[#C6A15B] font-semibold mb-4">
+              Putera Kepada
             </p>
-            <p className="font-names font-bold text-gold-glow tracking-[0.04em] text-[clamp(1.2rem,4.3vw,1.85rem)] text-balance">
-              {WEDDING_CONFIG.couple.brideFullName}
-            </p>
-            <p className="font-script text-2xl text-[#C6A15B]">bersama pasangannya</p>
-            <p className="font-names font-bold text-gold-glow tracking-[0.04em] text-[clamp(1.2rem,4.3vw,1.85rem)] text-balance">
-              {WEDDING_CONFIG.couple.groomFullName}
-            </p>
+            <div className="w-full flex flex-col items-center space-y-2.5 sm:space-y-3">
+              <p className="font-heading font-semibold text-gold-glow tracking-[0.03em] leading-snug text-[clamp(1rem,3.8vw,1.6rem)]">
+                {WEDDING_CONFIG.groomsParents.fatherName}
+              </p>
+              <div className="flex items-center justify-center gap-3 py-0.5" aria-hidden="true">
+                <span className="h-[1px] w-7 bg-[#C6A15B]/55" />
+                <span className="font-script text-2xl sm:text-3xl text-[#C6A15B] leading-none">
+                  &amp;
+                </span>
+                <span className="h-[1px] w-7 bg-[#C6A15B]/55" />
+              </div>
+              <span className="sr-only">&amp;</span>
+              <p className="font-heading font-semibold text-gold-glow tracking-[0.03em] leading-snug text-[clamp(1rem,3.8vw,1.6rem)]">
+                {WEDDING_CONFIG.groomsParents.motherName}
+              </p>
+            </div>
           </div>
 
           {/* Traditional Blessing Prayer */}

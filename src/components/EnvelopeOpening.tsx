@@ -1,10 +1,16 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { WEDDING_CONFIG } from '../config/weddingConfig';
-import { AwanLaratCorner, FloatingPetalsAndSparkles, MalayPalaceCrown } from './RoyalOrnaments';
+import {
+  AwanLaratCorner,
+  FloatingPetalsAndSparkles,
+  MalayPalaceCrown,
+  MonogramZP,
+} from './RoyalOrnaments';
 import emeraldSongketBg from '../assets/images/malay_songket_emerald_bg_1794719929264.jpg';
 
 interface EnvelopeOpeningProps {
+  onOpenStart?: () => void;
   onOpenComplete: () => void;
 }
 
@@ -47,11 +53,15 @@ const SymmetricalFloralSprig: React.FC<{ mirrored?: boolean }> = ({ mirrored = f
   </svg>
 );
 
-export const EnvelopeOpening: React.FC<EnvelopeOpeningProps> = ({ onOpenComplete }) => {
+export const EnvelopeOpening: React.FC<EnvelopeOpeningProps> = ({
+  onOpenStart,
+  onOpenComplete,
+}) => {
   const [stage, setStage] = useState<'closed' | 'opening' | 'sweep'>('closed');
 
   const handleOpenEnvelope = () => {
     if (stage !== 'closed') return;
+    onOpenStart?.();
     setStage('opening');
 
     window.setTimeout(() => {
@@ -166,11 +176,11 @@ export const EnvelopeOpening: React.FC<EnvelopeOpeningProps> = ({ onOpenComplete
                 {WEDDING_CONFIG.event.title}
               </p>
               <p className="mt-2 font-names text-lg sm:text-xl font-bold text-[#064E3B] leading-tight">
-                Putera Faizal Hakimi
+                Nur Zaireen Farisya
               </p>
               <span className="my-0.5 font-script text-lg text-[#C6A15B]">&amp;</span>
               <p className="font-names text-lg sm:text-xl font-bold text-[#064E3B] leading-tight">
-                Nur Zaireen Farisya
+                Putera Faizal Hakimi
               </p>
               <p className="mt-2.5 font-body text-[10px] tracking-[0.16em] text-[#064E3B]/80 uppercase font-medium">
                 {WEDDING_CONFIG.event.dateDisplayMs}
@@ -269,21 +279,19 @@ export const EnvelopeOpening: React.FC<EnvelopeOpeningProps> = ({ onOpenComplete
                 type="button"
                 onClick={handleOpenEnvelope}
                 disabled={isOpening}
-                aria-label="Ketuk mohor Z&P untuk membuka kad jemputan"
-                className="relative w-[84px] h-[84px] sm:w-[92px] sm:h-[92px] rounded-full flex items-center justify-center cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E6CB8E] focus-visible:ring-offset-4 focus-visible:ring-offset-[#064E3B] group shrink-0"
+                aria-label="Ketuk mohor ZP untuk membuka kad jemputan"
+                className="relative w-[90px] h-[90px] sm:w-[98px] sm:h-[98px] rounded-full flex items-center justify-center cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E6CB8E] focus-visible:ring-offset-4 focus-visible:ring-offset-[#064E3B] group shrink-0"
               >
                 {/* Outer Antique Gold Scalloped Seal */}
                 <span className="absolute inset-0 rounded-full bg-gradient-to-br from-[#F4E2B8] via-[#C6A15B] to-[#8E6D31] shadow-[0_10px_28px_rgba(0,0,0,0.55),0_0_26px_rgba(198,161,91,0.5)] transition-transform duration-300 group-hover:scale-105 group-active:scale-95" />
                 {/* Inner Deep Emerald Royal Medallion */}
-                <span className="relative w-[70px] h-[70px] sm:w-[76px] sm:h-[76px] rounded-full bg-[#04392B] border border-[#E6CB8E]/85 flex flex-col items-center justify-center overflow-hidden shadow-inner">
+                <span className="relative w-[76px] h-[76px] sm:w-[82px] sm:h-[82px] rounded-full bg-[#04392B] border border-[#E6CB8E]/85 flex flex-col items-center justify-center overflow-hidden shadow-inner">
                   <span
                     aria-hidden="true"
                     className="absolute inset-0 bg-gradient-to-r from-transparent via-[#E6CB8E]/25 to-transparent animate-royal-sheen"
                   />
-                  <span className="relative z-10 font-heading text-2xl sm:text-[26px] font-bold tracking-[0.06em] text-gold-glow leading-none">
-                    {WEDDING_CONFIG.couple.monogram}
-                  </span>
-                  <span className="relative z-10 mt-1 font-body text-[8px] uppercase tracking-[0.22em] text-[#C6A15B]">
+                  <MonogramZP className="relative z-10 w-[50px] h-[41px] sm:w-[56px] sm:h-[46px] -mt-0.5" />
+                  <span className="relative z-10 mt-0.5 font-body text-[7.5px] sm:text-[8px] uppercase tracking-[0.2em] text-[#E6CB8E]/90 leading-none">
                     12 · 12 · 26
                   </span>
                 </span>
@@ -319,7 +327,7 @@ export const EnvelopeOpening: React.FC<EnvelopeOpeningProps> = ({ onOpenComplete
           </button>
 
           <p className="mt-3 font-body text-xs text-[#E6CB8E]/80">
-            Ketuk mohor {WEDDING_CONFIG.couple.monogram} atau tekan butang di atas untuk membuka jemputan
+            Ketuk mohor diraja atau tekan butang di atas untuk membuka jemputan
           </p>
         </motion.div>
       </div>

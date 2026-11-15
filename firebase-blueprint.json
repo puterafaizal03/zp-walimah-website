@@ -1,0 +1,120 @@
+{
+  "entities": {
+    "PublicWish": {
+      "title": "PublicWish",
+      "description": "A public wedding wish submitted by a guest to be displayed on the Royal Malay Palace Guestbook.",
+      "type": "object",
+      "properties": {
+        "guestName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80,
+          "description": "Display name of the guest submitting the wish."
+        },
+        "relationship": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 50,
+          "description": "Optional relationship or group label (e.g., Keluarga, Rakan)."
+        },
+        "message": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 400,
+          "description": "The wedding wish or prayer text."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server-generated timestamp when the wish was created."
+        }
+      },
+      "required": ["guestName", "message", "createdAt"]
+    },
+    "PrivateWish": {
+      "title": "PrivateWish",
+      "description": "A private wedding wish visible only to the authenticated wedding host.",
+      "type": "object",
+      "properties": {
+        "guestName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80,
+          "description": "Display name of the guest submitting the private wish."
+        },
+        "relationship": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 50,
+          "description": "Optional relationship or group label."
+        },
+        "message": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 400,
+          "description": "Private wedding wish or prayer text."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server-generated timestamp when the private wish was created."
+        }
+      },
+      "required": ["guestName", "message", "createdAt"]
+    },
+    "SharedAlbumPhoto": {
+      "title": "SharedAlbumPhoto",
+      "description": "A compressed wedding photo shared by a guest or host in the public Shared Wedding Album.",
+      "type": "object",
+      "properties": {
+        "uploaderName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80,
+          "description": "Name of the guest or family member who uploaded the photo."
+        },
+        "caption": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 200,
+          "description": "Optional short caption or memory note accompanying the photo."
+        },
+        "imageDataUrl": {
+          "type": "string",
+          "minLength": 100,
+          "maxLength": 450000,
+          "pattern": "^data:image/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$",
+          "description": "Compressed base64 image data URL resized client-side for fast viewing."
+        },
+        "width": {
+          "type": "integer",
+          "description": "Pixel width of the compressed photo."
+        },
+        "height": {
+          "type": "integer",
+          "description": "Pixel height of the compressed photo."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server-generated timestamp when the photo was uploaded."
+        }
+      },
+      "required": ["uploaderName", "imageDataUrl", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/public_wishes/{wishId}": {
+      "schema": { "$ref": "#/entities/PublicWish" },
+      "description": "Public guestbook wishes readable by all wedding invitation visitors."
+    },
+    "/private_wishes/{wishId}": {
+      "schema": { "$ref": "#/entities/PrivateWish" },
+      "description": "Private guestbook wishes readable and manageable only by the authenticated host."
+    },
+    "/shared_album_photos/{photoId}": {
+      "schema": { "$ref": "#/entities/SharedAlbumPhoto" },
+      "description": "Shared wedding album photos readable and uploadable by guests, deletable by the authenticated host."
+    }
+  }
+}

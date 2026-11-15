@@ -34,7 +34,11 @@ export interface WeddingConfig {
   };
   couple: {
     groomFullName: string;
+    groomGivenName: string;
+    groomParentage: string;
     brideFullName: string;
+    brideGivenName: string;
+    brideParentage: string;
     monogram: string;
     /**
      * LALUAN GAMBAR POTRET PENGANTIN:
@@ -46,6 +50,10 @@ export interface WeddingConfig {
     couplePortraitAlt: string;
   };
   bridesParents: {
+    fatherName: string;
+    motherName: string;
+  };
+  groomsParents: {
     fatherName: string;
     motherName: string;
   };
@@ -85,6 +93,11 @@ export interface WeddingConfig {
      */
     entryIds: GoogleFormsEntryMap;
   };
+  music: {
+    youtubeVideoId: string;
+    customTrackUrl: string;
+    trackTitle: string;
+  };
 }
 
 export const WEDDING_CONFIG: WeddingConfig = {
@@ -96,15 +109,24 @@ export const WEDDING_CONFIG: WeddingConfig = {
   },
   couple: {
     groomFullName: 'PUTERA FAIZAL HAKIMI BIN MOHD RAFAEL',
+    groomGivenName: 'PUTERA FAIZAL HAKIMI',
+    groomParentage: 'BIN MOHD RAFAEL',
     brideFullName: 'NUR ZAIREEN FARISYA BINTI MOHD ZAIDI',
+    brideGivenName: 'NUR ZAIREEN FARISYA',
+    brideParentage: 'BINTI MOHD ZAIDI',
     monogram: 'Z&P',
-    couplePortraitUrl: '',
+    couplePortraitUrl:
+      '/assets/aistudio/WhatsApp_Image_2026-11-15_at_9.57.57_PM__1__ca5ce5bd.jpeg',
     couplePortraitAlt:
-      'Potret Pasangan Mempelai — Putera Faizal Hakimi & Nur Zaireen Farisya',
+      'Ilustrasi Potret Pasangan Mempelai — Nur Zaireen Farisya & Putera Faizal Hakimi',
   },
   bridesParents: {
     fatherName: 'MOHD. ZAIDI BIN CHIK',
     motherName: 'FAUZIAH BINTI AWANG',
+  },
+  groomsParents: {
+    fatherName: 'MOHD RAFAEL BIN ABDULLAH',
+    motherName: 'ROSMANI BINTI TAIB',
   },
   invitationCopy: {
     gratitudeHeading: 'DENGAN PENUH KESYUKURAN',
@@ -136,5 +158,15 @@ export const WEDDING_CONFIG: WeddingConfig = {
       additionalGuests: '',
       wishes: '',
     },
+  },
+  music: {
+    /**
+     * ID VIDEO YOUTUBE UNTUK LAGU LATAR:
+     * Lagu pilihan: https://www.youtube.com/watch?v=vBkfMPeYJBE
+     * Jika mahu guna fail MP3 sendiri, kosongkan youtubeVideoId dan isi customTrackUrl.
+     */
+    youtubeVideoId: 'vBkfMPeYJBE',
+    customTrackUrl: '',
+    trackTitle: 'Young Berry Lee — Umbrella',
   },
 };

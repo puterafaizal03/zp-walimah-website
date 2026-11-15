@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { MailOpen } from 'lucide-react';
 import { WEDDING_CONFIG } from './config/weddingConfig';
@@ -6,13 +6,24 @@ import { EnvelopeOpening } from './components/EnvelopeOpening';
 import { MainInvitation } from './components/MainInvitation';
 import { FamilyInvitation } from './components/FamilyInvitation';
 import { WeddingDetails } from './components/WeddingDetails';
+import { SharedAlbumSection } from './components/SharedAlbumSection';
+import { GuestbookSection } from './components/GuestbookSection';
 import { RsvpSection } from './components/RsvpSection';
 import { PalaceNavigation } from './components/PalaceNavigation';
-import { FloatingPetalsAndSparkles, RoyalDivider } from './components/RoyalOrnaments';
+import { FloatingPetalsAndSparkles, MonogramZP, RoyalDivider } from './components/RoyalOrnaments';
+import {
+  BackgroundMusicHandle,
+  BackgroundMusicPlayer,
+} from './components/BackgroundMusicPlayer';
 import emeraldSongketBg from './assets/images/malay_songket_emerald_bg_1794719929264.jpg';
 
 export default function App() {
   const [isOpened, setIsOpened] = useState(false);
+  const musicPlayerRef = useRef<BackgroundMusicHandle>(null);
+
+  const handleOpenStart = () => {
+    musicPlayerRef.current?.startFromGesture();
+  };
 
   const handleOpenComplete = () => {
     setIsOpened(true);
@@ -26,9 +37,15 @@ export default function App() {
 
   return (
     <div className="min-h-[100dvh] w-full bg-[#064E3B] text-[#16261F] overflow-x-hidden">
+      <BackgroundMusicPlayer ref={musicPlayerRef} hasBottomNav={isOpened} />
+
       <AnimatePresence mode="wait">
         {!isOpened ? (
-          <EnvelopeOpening key="envelope-stage" onOpenComplete={handleOpenComplete} />
+          <EnvelopeOpening
+            key="envelope-stage"
+            onOpenStart={handleOpenStart}
+            onOpenComplete={handleOpenComplete}
+          />
         ) : (
           <motion.div
             key="invitation-stage"
@@ -66,6 +83,8 @@ export default function App() {
               <MainInvitation />
               <FamilyInvitation />
               <WeddingDetails />
+              <SharedAlbumSection />
+              <GuestbookSection />
               <RsvpSection />
             </main>
 
@@ -73,11 +92,9 @@ export default function App() {
             <footer className="relative z-20 pb-24 md:pb-10 pt-4 px-4 text-center text-[#F5F0E5]/85">
               <div className="max-w-xl mx-auto space-y-4">
                 <RoyalDivider />
-                <p className="font-heading text-lg font-bold tracking-widest text-[#C6A15B]">
-                  {WEDDING_CONFIG.couple.monogram}
-                </p>
+                <MonogramZP className="w-16 h-[52px] mx-auto" label="Monogram Diraja ZP" />
                 <p className="font-names text-xl sm:text-2xl font-semibold text-gold-glow tracking-wide">
-                  Putera Faizal Hakimi &amp; Nur Zaireen Farisya
+                  Nur Zaireen Farisya &amp; Putera Faizal Hakimi
                 </p>
                 <p className="font-body text-xs uppercase tracking-[0.2em] text-[#C6A15B]">
                   {WEDDING_CONFIG.event.dateDisplayMs} · {WEDDING_CONFIG.event.venueName}

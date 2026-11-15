@@ -1,6 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { Calendar, Heart, MailOpen, Users, Sparkles } from 'lucide-react';
-import { WEDDING_CONFIG } from '../config/weddingConfig';
+import {
+  Calendar,
+  Heart,
+  Images,
+  MailOpen,
+  MessageSquareHeart,
+  Sparkles,
+  Users,
+} from 'lucide-react';
+import { MonogramZP } from './RoyalOrnaments';
 
 interface PalaceNavigationProps {
   onReplayEnvelope: () => void;
@@ -10,6 +18,8 @@ const NAV_ITEMS = [
   { id: 'jemputan', label: 'Jemputan', icon: Sparkles },
   { id: 'keluarga', label: 'Keluarga', icon: Users },
   { id: 'butiran', label: 'Butiran', icon: Calendar },
+  { id: 'galeri', label: 'Galeri', icon: Images },
+  { id: 'ucapan', label: 'Ucapan', icon: MessageSquareHeart },
   { id: 'rsvp', label: 'RSVP', icon: Heart },
 ] as const;
 
@@ -52,7 +62,7 @@ export const PalaceNavigation: React.FC<PalaceNavigationProps> = ({ onReplayEnve
 
   return (
     <>
-      {/* Desktop Top Bar (3-zone contract: Brand — 4 Single-line Links — 1 Primary Action) */}
+      {/* Desktop Top Bar (3-zone contract: Brand — 5 Single-line Links — 1 Primary Action) */}
       <header className="hidden md:flex sticky top-0 z-30 items-center justify-between gap-8 px-8 py-3.5 bg-[#032B20]/90 backdrop-blur-md border-b border-[#C6A15B]/35">
         <a
           href="#jemputan"
@@ -60,9 +70,11 @@ export const PalaceNavigation: React.FC<PalaceNavigationProps> = ({ onReplayEnve
             e.preventDefault();
             scrollToSection('jemputan');
           }}
-          className="font-heading text-xl font-bold tracking-wider text-gold-glow whitespace-nowrap shrink-0"
+          className="inline-flex items-center gap-2.5 font-heading text-lg font-bold tracking-wider text-gold-glow whitespace-nowrap shrink-0"
         >
-          {WEDDING_CONFIG.couple.monogram} · Walimatulurus
+          <MonogramZP className="w-9 h-[30px] shrink-0" />
+          <span aria-hidden="true" className="text-[#C6A15B]/75">·</span>
+          <span>Walimatulurus</span>
         </a>
 
         <nav aria-label="Navigasi utama" className="flex items-center gap-6 font-body text-sm font-medium text-[#F5F0E5]/85">
@@ -98,9 +110,9 @@ export const PalaceNavigation: React.FC<PalaceNavigationProps> = ({ onReplayEnve
       {/* Mobile Bottom Thumb-Zone Tab Bar (Height 58px < 10% of mobile viewport) */}
       <nav
         aria-label="Navigasi mudah alih"
-        className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-[#032B20]/95 backdrop-blur-md border-t border-[#C6A15B]/45 px-2 pb-[env(safe-area-inset-bottom)]"
+        className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-[#032B20]/95 backdrop-blur-md border-t border-[#C6A15B]/45 px-1 pb-[env(safe-area-inset-bottom)]"
       >
-        <div className="grid grid-cols-4 items-center h-[58px] max-w-md mx-auto font-body">
+        <div className="grid grid-cols-6 items-center h-[58px] max-w-md mx-auto font-body">
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
             const isActive = activeId === item.id;
@@ -114,7 +126,7 @@ export const PalaceNavigation: React.FC<PalaceNavigationProps> = ({ onReplayEnve
                 }`}
               >
                 <Icon className="w-4 h-4" aria-hidden="true" />
-                <span className="text-[11px] font-medium tracking-tight">{item.label}</span>
+                <span className="text-[10px] font-medium tracking-tight">{item.label}</span>
               </button>
             );
           })}

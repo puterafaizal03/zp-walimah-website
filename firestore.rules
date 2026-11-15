@@ -1,0 +1,84 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isHostAdmin() {
+      return isSignedIn()
+        && request.auth.token.email_verified == true
+        && request.auth.token.email == 'PuteraFaizal26@gmail.com';
+    }
+
+    function isValidWish(data) {
+      return data.keys().hasAll(['guestName', 'message', 'createdAt'])
+        && data.keys().hasOnly(['guestName', 'relationship', 'message', 'createdAt'])
+        && data.guestName is string
+        && data.guestName.size() >= 2
+        && data.guestName.size() <= 80
+        && (!('relationship' in data) || (data.relationship is string && data.relationship.size() <= 50))
+        && data.message is string
+        && data.message.size() >= 3
+        && data.message.size() <= 400
+        && data.createdAt == request.time;
+    }
+
+    function isValidAlbumPhoto(data) {
+      return data.keys().hasAll(['uploaderName', 'imageDataUrl', 'createdAt'])
+        && data.keys().hasOnly(['uploaderName', 'caption', 'imageDataUrl', 'width', 'height', 'createdAt'])
+        && data.uploaderName is string
+        && data.uploaderName.size() >= 2
+        && data.uploaderName.size() <= 80
+        && (!('caption' in data) || (data.caption is string && data.caption.size() <= 200))
+        && data.imageDataUrl is string
+        && data.imageDataUrl.size() >= 100
+        && data.imageDataUrl.size() <= 450000
+        && data.imageDataUrl.matches('^data:image/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$')
+        && (!('width' in data) || (data.width is int && data.width >= 1 && data.width <= 2000))
+        && (!('height' in data) || (data.height is int && data.height >= 1 && data.height <= 2000))
+        && data.createdAt == request.time;
+    }
+
+    // Public guestbook wishes: readable by invitation guests, strict validated creates, host-only delete
+    match /public_wishes/{wishId} {
+      allow get: if isValidId(wishId);
+      allow list: if true;
+      allow create: if isValidId(wishId) && isValidWish(incoming());
+      allow update: if false;
+      allow delete: if isValidId(wishId) && isHostAdmin();
+    }
+
+    // Private guestbook wishes: strict validated writes by guests, readable & deletable ONLY by verified host
+    match /private_wishes/{wishId} {
+      allow get: if isValidId(wishId) && isHostAdmin();
+      allow list: if isHostAdmin();
+      allow create: if isValidId(wishId) && isValidWish(incoming());
+      allow update: if false;
+      allow delete: if isValidId(wishId) && isHostAdmin();
+    }
+
+    // Shared wedding album photos: viewable & uploadable by all invitation guests, deletable ONLY by verified host
+    match /shared_album_photos/{photoId} {
+      allow get: if isValidId(photoId);
+      allow list: if true;
+      allow create: if isValidId(photoId) && isValidAlbumPhoto(incoming());
+      allow update: if false;
+      allow delete: if isValidId(photoId) && isHostAdmin();
+    }
+  }
+}
