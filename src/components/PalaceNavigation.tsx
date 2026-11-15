@@ -1,12 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Calendar,
   Heart,
   Images,
   MailOpen,
+  Menu,
   MessageSquareHeart,
   Sparkles,
   Users,
+  X,
 } from 'lucide-react';
 import { MonogramZP } from './RoyalOrnaments';
 
@@ -25,6 +27,8 @@ const NAV_ITEMS = [
 
 export const PalaceNavigation: React.FC<PalaceNavigationProps> = ({ onReplayEnvelope }) => {
   const [activeId, setActiveId] = useState<string>('jemputan');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const mobileMenuRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const sections = NAV_ITEMS.map((item) => document.getElementById(item.id)).filter(
@@ -52,8 +56,33 @@ export const PalaceNavigation: React.FC<PalaceNavigationProps> = ({ onReplayEnve
     return () => observer.disconnect();
   }, []);
 
+  // Close mobile menu on Escape or tap outside
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setMobileMenuOpen(false);
+      }
+    };
+
+    const handlePointerDown = (e: PointerEvent) => {
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(e.target as Node)) {
+        setMobileMenuOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('pointerdown', handlePointerDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('pointerdown', handlePointerDown);
+    };
+  }, [mobileMenuOpen]);
+
   const scrollToSection = (id: string) => {
     setActiveId(id);
+    setMobileMenuOpen(false);
     const el = document.getElementById(id);
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -62,22 +91,25 @@ export const PalaceNavigation: React.FC<PalaceNavigationProps> = ({ onReplayEnve
 
   return (
     <>
-      {/* Desktop Top Bar (3-zone contract: Brand — 5 Single-line Links — 1 Primary Action) */}
-      <header className="hidden md:flex sticky top-0 z-30 items-center justify-between gap-8 px-8 py-3.5 bg-[#032B20]/90 backdrop-blur-md border-b border-[#C6A15B]/35">
+      {/* Desktop Sticky Top Bar (reserves right slot for fixed Sound button so controls sit side-by-side cleanly) */}
+      <header className="hidden md:flex sticky top-0 z-30 min-h-[68px] items-center justify-between gap-5 lg:gap-8 pl-6 lg:pl-8 md:pr-[82px] py-3 bg-[#032B20]/92 backdrop-blur-md border-b border-[#C6A15B]/35">
         <a
           href="#jemputan"
           onClick={(e) => {
             e.preventDefault();
             scrollToSection('jemputan');
           }}
-          className="inline-flex items-center gap-2.5 font-heading text-lg font-bold tracking-wider text-gold-glow whitespace-nowrap shrink-0"
+          className="inline-flex items-center gap-2.5 font-heading text-base lg:text-lg font-bold tracking-wider text-gold-glow whitespace-nowrap shrink-0"
         >
-          <MonogramZP className="w-9 h-[30px] shrink-0" />
+          <MonogramZP className="w-8 lg:w-9 h-[26px] lg:h-[30px] shrink-0" />
           <span aria-hidden="true" className="text-[#C6A15B]/75">·</span>
           <span>Walimatulurus</span>
         </a>
 
-        <nav aria-label="Navigasi utama" className="flex items-center gap-6 font-body text-sm font-medium text-[#F5F0E5]/85">
+        <nav
+          aria-label="Navigasi utama"
+          className="flex items-center gap-3.5 lg:gap-6 font-body text-xs lg:text-sm font-medium text-[#F5F0E5]/85"
+        >
           {NAV_ITEMS.map((item) => (
             <a
               key={item.id}
@@ -100,38 +132,77 @@ export const PalaceNavigation: React.FC<PalaceNavigationProps> = ({ onReplayEnve
         <button
           type="button"
           onClick={onReplayEnvelope}
-          className="min-h-[40px] px-4 py-2 rounded-lg border border-[#C6A15B]/75 bg-[#064E3B] text-[#E6CB8E] font-body text-xs font-semibold tracking-wider uppercase hover:bg-[#043B2C] transition-colors cursor-pointer whitespace-nowrap shrink-0 flex items-center gap-2"
+          className="min-h-[44px] px-3.5 lg:px-4 py-2 rounded-full border border-[#C6A15B]/80 bg-[#064E3B] text-[#E6CB8E] font-body text-xs font-semibold tracking-wider uppercase hover:bg-[#043B2C] transition-colors cursor-pointer whitespace-nowrap shrink-0 flex items-center gap-2"
         >
           <MailOpen className="w-3.5 h-3.5" aria-hidden="true" />
           <span>Buka Sampul</span>
         </button>
       </header>
 
-      {/* Mobile Bottom Thumb-Zone Tab Bar (Height 58px < 10% of mobile viewport) */}
-      <nav
-        aria-label="Navigasi mudah alih"
-        className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-[#032B20]/95 backdrop-blur-md border-t border-[#C6A15B]/45 px-1 pb-[env(safe-area-inset-bottom)]"
-      >
-        <div className="grid grid-cols-6 items-center h-[58px] max-w-md mx-auto font-body">
-          {NAV_ITEMS.map((item) => {
-            const Icon = item.icon;
-            const isActive = activeId === item.id;
-            return (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => scrollToSection(item.id)}
-                className={`min-h-[44px] flex flex-col items-center justify-center gap-0.5 rounded-lg transition-colors cursor-pointer whitespace-nowrap ${
-                  isActive ? 'text-[#E6CB8E]' : 'text-[#F5F0E5]/70 hover:text-[#F5F0E5]'
-                }`}
-              >
-                <Icon className="w-4 h-4" aria-hidden="true" />
-                <span className="text-[10px] font-medium tracking-tight">{item.label}</span>
-              </button>
-            );
-          })}
-        </div>
-      </nav>
+      {/* Mobile Top-Right Floating Menu Button + Dropdown (positioned neatly beside top-right Mute/Sound button) */}
+      <div ref={mobileMenuRef} className="md:hidden">
+        <button
+          type="button"
+          onClick={() => setMobileMenuOpen((prev) => !prev)}
+          aria-expanded={mobileMenuOpen}
+          aria-controls="mobile-palace-menu"
+          aria-label={mobileMenuOpen ? 'Tutup menu navigasi' : 'Buka menu navigasi'}
+          className="fixed top-[calc(env(safe-area-inset-top,0px)+12px)] right-[68px] sm:right-[78px] z-40 h-11 px-3.5 rounded-full bg-[#032B20]/95 backdrop-blur-md border border-[#C6A15B]/85 text-[#E6CB8E] shadow-[0_8px_24px_rgba(0,0,0,0.45)] hover:bg-[#064E3B] hover:border-[#E6CB8E] active:scale-95 transition-all duration-200 inline-flex items-center justify-center gap-1.5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E6CB8E]"
+        >
+          {mobileMenuOpen ? (
+            <X className="w-4 h-4 shrink-0" aria-hidden="true" />
+          ) : (
+            <Menu className="w-4 h-4 shrink-0" aria-hidden="true" />
+          )}
+          <span className="font-body text-xs font-semibold tracking-wider uppercase">
+            Menu
+          </span>
+        </button>
+
+        {mobileMenuOpen && (
+          <nav
+            id="mobile-palace-menu"
+            aria-label="Navigasi mudah alih"
+            className="fixed top-[calc(env(safe-area-inset-top,0px)+66px)] right-3.5 sm:right-6 z-40 w-60 rounded-2xl bg-[#032B20]/95 backdrop-blur-md border border-[#C6A15B]/80 shadow-[0_20px_50px_rgba(0,0,0,0.55)] p-2 font-body"
+          >
+            <div className="space-y-1">
+              {NAV_ITEMS.map((item) => {
+                const Icon = item.icon;
+                const isActive = activeId === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => scrollToSection(item.id)}
+                    className={`w-full min-h-[44px] px-3.5 py-2 rounded-xl flex items-center gap-3 text-left text-sm font-medium transition-colors cursor-pointer ${
+                      isActive
+                        ? 'bg-[#064E3B] text-[#E6CB8E] border border-[#C6A15B]/55'
+                        : 'text-[#F5F0E5]/90 hover:bg-[#064E3B]/65 hover:text-[#E6CB8E]'
+                    }`}
+                  >
+                    <Icon className="w-4 h-4 text-[#C6A15B] shrink-0" aria-hidden="true" />
+                    <span>{item.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="my-2 border-t border-[#C6A15B]/30" />
+
+            <button
+              type="button"
+              onClick={() => {
+                setMobileMenuOpen(false);
+                onReplayEnvelope();
+              }}
+              className="w-full min-h-[44px] px-3.5 py-2 rounded-xl bg-[#064E3B]/80 border border-[#C6A15B]/60 text-[#E6CB8E] text-xs font-semibold uppercase tracking-wider flex items-center gap-2.5 hover:bg-[#064E3B] transition-colors cursor-pointer"
+            >
+              <MailOpen className="w-4 h-4 shrink-0" aria-hidden="true" />
+              <span>Buka Semula Sampul</span>
+            </button>
+          </nav>
+        )}
+      </div>
     </>
   );
 };

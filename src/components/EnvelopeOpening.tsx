@@ -80,7 +80,7 @@ export const EnvelopeOpening: React.FC<EnvelopeOpeningProps> = ({
       aria-label="Pembukaan Kad Jemputan Majlis Walimatulurus"
       initial={{ opacity: 1 }}
       exit={{ opacity: 0, transition: { duration: 0.65, ease: [0.16, 1, 0.3, 1] } }}
-      className="relative min-h-[100dvh] w-full flex flex-col items-center justify-center overflow-hidden bg-[#064E3B] px-4 py-8 sm:py-12"
+      className="relative min-h-[100dvh] w-full flex flex-col items-center justify-center overflow-hidden bg-[#064E3B] px-4 pt-[calc(env(safe-area-inset-top,0px)+4.5rem)] pb-14 sm:py-14"
     >
       {/* Layer 1: Woven Songket Emerald Silk Texture with Deep Radial Scrim */}
       <div className="pointer-events-none absolute inset-0 z-0">

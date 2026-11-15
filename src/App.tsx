@@ -37,7 +37,7 @@ export default function App() {
 
   return (
     <div className="min-h-[100dvh] w-full bg-[#064E3B] text-[#16261F] overflow-x-hidden">
-      <BackgroundMusicPlayer ref={musicPlayerRef} hasBottomNav={isOpened} />
+      <BackgroundMusicPlayer ref={musicPlayerRef} />
 
       <AnimatePresence mode="wait">
         {!isOpened ? (
@@ -78,8 +78,8 @@ export default function App() {
             {/* Responsive Navigation */}
             <PalaceNavigation onReplayEnvelope={handleReplayEnvelope} />
 
-            {/* Scrollable Royal Palace Experience */}
-            <main className="relative z-20">
+            {/* Scrollable Royal Palace Experience (top mobile padding reserves clean space for top-right Menu & Sound controls) */}
+            <main className="relative z-20 pt-[calc(env(safe-area-inset-top,0px)+4rem)] md:pt-0">
               <MainInvitation />
               <FamilyInvitation />
               <WeddingDetails />
@@ -88,8 +88,8 @@ export default function App() {
               <RsvpSection />
             </main>
 
-            {/* Quiet Royal Footer */}
-            <footer className="relative z-20 pb-24 md:pb-10 pt-4 px-4 text-center text-[#F5F0E5]/85">
+            {/* Quiet Royal Footer (keeps bottom margin spacious and clear of host badges) */}
+            <footer className="relative z-20 pb-20 md:pb-16 pt-4 px-4 text-center text-[#F5F0E5]/85">
               <div className="max-w-xl mx-auto space-y-4">
                 <RoyalDivider />
                 <MonogramZP className="w-16 h-[52px] mx-auto" label="Monogram Diraja ZP" />

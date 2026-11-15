@@ -15,8 +15,8 @@ export interface BackgroundMusicHandle {
 }
 
 interface BackgroundMusicPlayerProps {
-  /** Adjusts bottom spacing when mobile bottom nav bar is visible */
-  hasBottomNav: boolean;
+  /** Kept optional for backwards compatibility */
+  hasBottomNav?: boolean;
 }
 
 /**
@@ -87,7 +87,7 @@ declare global {
 export const BackgroundMusicPlayer = forwardRef<
   BackgroundMusicHandle,
   BackgroundMusicPlayerProps
->(({ hasBottomNav }, ref) => {
+>((_props, ref) => {
   const customUrl = WEDDING_CONFIG.music?.customTrackUrl?.trim() ?? '';
   const youtubeVideoId = WEDDING_CONFIG.music?.youtubeVideoId?.trim() ?? '';
   const hasCustomTrack = Boolean(customUrl);
@@ -636,9 +636,7 @@ export const BackgroundMusicPlayer = forwardRef<
         }
         aria-pressed={isAudible}
         title={isAudible ? `Bisukan: ${trackLabel}` : `Mainkan: ${trackLabel}`}
-        className={`fixed right-3.5 sm:right-6 z-40 w-11 h-11 rounded-full bg-[#032B20]/90 backdrop-blur-md border border-[#C6A15B]/80 text-[#E6CB8E] shadow-[0_8px_24px_rgba(0,0,0,0.4)] hover:bg-[#064E3B] hover:border-[#E6CB8E] active:scale-95 transition-all duration-200 flex items-center justify-center cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E6CB8E] ${
-          hasBottomNav ? 'bottom-[72px] md:bottom-6' : 'bottom-5 sm:bottom-6'
-        }`}
+        className="fixed top-[calc(env(safe-area-inset-top,0px)+12px)] right-3.5 sm:right-6 z-40 w-11 h-11 rounded-full bg-[#032B20]/95 backdrop-blur-md border border-[#C6A15B]/85 text-[#E6CB8E] shadow-[0_8px_24px_rgba(0,0,0,0.45)] hover:bg-[#064E3B] hover:border-[#E6CB8E] active:scale-95 transition-all duration-200 flex items-center justify-center cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E6CB8E]"
       >
         {isAudible ? (
           <Volume2 className="w-[18px] h-[18px]" aria-hidden="true" />
