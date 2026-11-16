@@ -11,6 +11,7 @@ import {
   Images,
   LogIn,
   LogOut,
+  RefreshCw,
   Trash2,
   Upload,
   X,
@@ -22,24 +23,29 @@ import {
   signOut,
 } from 'firebase/auth';
 import {
+  DocumentData,
+  QueryDocumentSnapshot,
   Timestamp,
   collection,
   deleteDoc,
   doc,
   limit,
-  onSnapshot,
   orderBy,
   query,
   serverTimestamp,
   setDoc,
+  startAfter,
 } from 'firebase/firestore';
 import {
+  ALBUM_CACHE_TTL_MS,
   HOST_ADMIN_EMAIL,
   OperationType,
   auth,
   db,
+  fetchPublicQueryWithCacheFallback,
   googleProvider,
   handleFirestoreError,
+  isQuotaExceededError,
 } from '../lib/firebase';
 import { AwanLaratCorner, RoyalDivider } from './RoyalOrnaments';
 
@@ -60,12 +66,20 @@ interface CompressedPhotoResult {
   sizeKb: number;
 }
 
-const MAX_DATA_URL_LENGTH = 420_000;
+const MAX_DATA_URL_LENGTH = 200_000;
+const ALBUM_PAGE_SIZE = 8;
 const SAFE_DATA_URL_PATTERN = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/;
 
 function generateSafePhotoId(): string {
   const randomPart = Math.random().toString(36).slice(2, 10);
   return `photo_${Date.now()}_${randomPart}`;
+}
+
+function getUtf8ByteLength(value: string): number {
+  if (typeof TextEncoder !== 'undefined') {
+    return new TextEncoder().encode(value).length;
+  }
+  return value.length;
 }
 
 function formatPhotoDate(ts: Timestamp | null): string {
@@ -106,11 +120,11 @@ async function compressImageForAlbum(file: File): Promise<CompressedPhotoResult>
     }
 
     const attempts: Array<{ maxEdge: number; quality: number }> = [
-      { maxEdge: 1080, quality: 0.78 },
-      { maxEdge: 1080, quality: 0.65 },
-      { maxEdge: 900, quality: 0.60 },
-      { maxEdge: 760, quality: 0.55 },
-      { maxEdge: 600, quality: 0.48 },
+      { maxEdge: 880, quality: 0.72 },
+      { maxEdge: 800, quality: 0.62 },
+      { maxEdge: 700, quality: 0.56 },
+      { maxEdge: 600, quality: 0.50 },
+      { maxEdge: 520, quality: 0.44 },
     ];
 
     const canvas = document.createElement('canvas');
@@ -180,11 +194,41 @@ function downloadPhotoFile(photo: SharedAlbumPhoto, index: number) {
   }
 }
 
+interface SessionAlbumSnapshot {
+  photos: SharedAlbumPhoto[];
+  lastVisibleDoc: QueryDocumentSnapshot<DocumentData> | null;
+  hasMorePhotos: boolean;
+  fromCache: boolean;
+  quotaWarning: boolean;
+}
+
+// Volatile in-tab memory snapshot so replaying the envelope does not trigger duplicate reads
+let sessionAlbumSnapshot: SessionAlbumSnapshot | null = null;
+
 export const SharedAlbumSection: React.FC = () => {
-  // Album real-time stream state
-  const [photos, setPhotos] = useState<SharedAlbumPhoto[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Album state (lazy-loaded & paged at max 8 docs per page to protect free daily quota)
+  const [photos, setPhotos] = useState<SharedAlbumPhoto[]>(() => sessionAlbumSnapshot?.photos ?? []);
+  const [loading, setLoading] = useState<boolean>(() => !sessionAlbumSnapshot);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMorePhotos, setHasMorePhotos] = useState<boolean>(
+    () => sessionAlbumSnapshot?.hasMorePhotos ?? false
+  );
+  const [lastVisibleDoc, setLastVisibleDoc] = useState<QueryDocumentSnapshot<DocumentData> | null>(
+    () => sessionAlbumSnapshot?.lastVisibleDoc ?? null
+  );
+  const [isShowingCachedData, setIsShowingCachedData] = useState<boolean>(
+    () => sessionAlbumSnapshot?.fromCache ?? false
+  );
   const [loadError, setLoadError] = useState('');
+  const [quotaWarning, setQuotaWarning] = useState<boolean>(
+    () => sessionAlbumSnapshot?.quotaWarning ?? false
+  );
+  const [hasTriggeredInitialLoad, setHasTriggeredInitialLoad] = useState<boolean>(
+    () => Boolean(sessionAlbumSnapshot)
+  );
+  const sectionRef = useRef<HTMLElement | null>(null);
+  const inFlightFetchRef = useRef<Promise<void> | null>(null);
+  const loadedCursorIdsRef = useRef<Set<string>>(new Set());
 
   // Upload composer state
   const [composerOpen, setComposerOpen] = useState(false);
@@ -223,47 +267,169 @@ export const SharedAlbumSection: React.FC = () => {
     return () => unsubscribe();
   }, []);
 
-  // Subscribe to shared_album_photos in real time
-  useEffect(() => {
-    const albumPath = 'shared_album_photos';
-    const q = query(
-      collection(db, albumPath),
-      orderBy('createdAt', 'desc'),
-      limit(60)
-    );
+  const mapSnapshotDocs = (docs: QueryDocumentSnapshot<DocumentData>[]): SharedAlbumPhoto[] =>
+    docs.map((d) => {
+      const data = d.data();
+      return {
+        id: d.id,
+        uploaderName: String(data.uploaderName ?? 'Tetamu'),
+        caption: data.caption ? String(data.caption) : undefined,
+        imageDataUrl: String(data.imageDataUrl ?? ''),
+        width: typeof data.width === 'number' ? data.width : undefined,
+        height: typeof data.height === 'number' ? data.height : undefined,
+        createdAt: data.createdAt instanceof Timestamp ? data.createdAt : null,
+      };
+    });
 
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        const items: SharedAlbumPhoto[] = snapshot.docs.map((d) => {
-          const data = d.data();
-          return {
-            id: d.id,
-            uploaderName: String(data.uploaderName ?? 'Tetamu'),
-            caption: data.caption ? String(data.caption) : undefined,
-            imageDataUrl: String(data.imageDataUrl ?? ''),
-            width: typeof data.width === 'number' ? data.width : undefined,
-            height: typeof data.height === 'number' ? data.height : undefined,
-            createdAt: data.createdAt instanceof Timestamp ? data.createdAt : null,
-          };
-        });
-        setPhotos(items);
-        setLoading(false);
-        setLoadError('');
-      },
-      (error) => {
-        setLoading(false);
-        setLoadError('Galeri kenangan tidak dapat dimuatkan buat masa ini.');
-        try {
-          handleFirestoreError(error, OperationType.LIST, albumPath);
-        } catch {
-          // Logged by handleFirestoreError
-        }
+  const syncSessionSnapshot = useCallback(
+    (next: SessionAlbumSnapshot) => {
+      sessionAlbumSnapshot = next;
+    },
+    []
+  );
+
+  const fetchAlbumPage = useCallback(
+    async (options?: {
+      cursor?: QueryDocumentSnapshot<DocumentData> | null;
+      forceServer?: boolean;
+    }) => {
+      if (inFlightFetchRef.current) {
+        return inFlightFetchRef.current;
       }
+
+      const cursor = options?.cursor ?? null;
+      const forceServer = Boolean(options?.forceServer);
+      const isNextPage = Boolean(cursor);
+
+      // Guard against reloading the exact same pagination cursor twice
+      if (cursor && !forceServer && loadedCursorIdsRef.current.has(cursor.id)) {
+        return;
+      }
+
+      const task = (async () => {
+        const albumPath = 'shared_album_photos';
+        if (isNextPage) {
+          setLoadingMore(true);
+        } else {
+          setLoading(true);
+          setLoadError('');
+        }
+
+        const q = cursor
+          ? query(
+              collection(db, albumPath),
+              orderBy('createdAt', 'desc'),
+              startAfter(cursor),
+              limit(ALBUM_PAGE_SIZE)
+            )
+          : query(
+              collection(db, albumPath),
+              orderBy('createdAt', 'desc'),
+              limit(ALBUM_PAGE_SIZE)
+            );
+
+        const cacheKey = cursor ? `shared_album_after_${cursor.id}` : 'shared_album_page_1';
+
+        try {
+          const result = await fetchPublicQueryWithCacheFallback(q, {
+            cacheKey,
+            ttlMs: ALBUM_CACHE_TTL_MS,
+            forceServer,
+          });
+
+          const items = mapSnapshotDocs(result.snapshot.docs);
+          const nextCursor =
+            result.snapshot.docs[result.snapshot.docs.length - 1] ?? cursor ?? null;
+          const moreAvailable = result.snapshot.docs.length === ALBUM_PAGE_SIZE;
+
+          if (cursor) {
+            loadedCursorIdsRef.current.add(cursor.id);
+          } else if (forceServer) {
+            loadedCursorIdsRef.current.clear();
+          }
+
+          setPhotos((prev) => {
+            let nextList: SharedAlbumPhoto[];
+            if (isNextPage) {
+              const seen = new Set(prev.map((p) => p.id));
+              nextList = [...prev];
+              for (const item of items) {
+                if (!seen.has(item.id)) nextList.push(item);
+              }
+            } else {
+              nextList = items;
+            }
+            syncSessionSnapshot({
+              photos: nextList,
+              lastVisibleDoc: nextCursor,
+              hasMorePhotos: moreAvailable,
+              fromCache: result.fromCache,
+              quotaWarning: result.quotaHit,
+            });
+            return nextList;
+          });
+
+          setLastVisibleDoc(nextCursor);
+          setHasMorePhotos(moreAvailable);
+          setIsShowingCachedData(result.fromCache);
+          setQuotaWarning(result.quotaHit);
+          setLoadError(
+            result.quotaHit
+              ? 'Kuota bacaan harian pangkalan data telah mencapai had sementara. Paparan di bawah menggunakan salinan cache tempatan. Foto tetamu tidak dipadam dan kekal selamat.'
+              : ''
+          );
+        } catch (error) {
+          const quotaHit = isQuotaExceededError(error);
+          setQuotaWarning(quotaHit);
+          setLoadError(
+            quotaHit
+              ? 'Kuota bacaan harian pangkalan data telah penuh sementara waktu. Semua foto dan ucapan sedia ada masih selamat dan tidak dipadam. Sila cuba muat semula apabila kuota harian diset semula.'
+              : 'Galeri kenangan tidak dapat dimuatkan buat masa ini. Sila cuba muat semula sebentar lagi.'
+          );
+          if (!quotaHit) {
+            try {
+              handleFirestoreError(error, OperationType.LIST, albumPath);
+            } catch {
+              // Logged by handleFirestoreError
+            }
+          }
+        } finally {
+          setLoading(false);
+          setLoadingMore(false);
+          inFlightFetchRef.current = null;
+        }
+      })();
+
+      inFlightFetchRef.current = task;
+      return task;
+    },
+    [syncSessionSnapshot]
+  );
+
+  // Lazy-trigger album fetch only when Galeri approaches viewport (0 reads until visitor scrolls near #galeri)
+  useEffect(() => {
+    if (hasTriggeredInitialLoad) return;
+    const node = sectionRef.current;
+    if (!node || typeof IntersectionObserver === 'undefined') {
+      setHasTriggeredInitialLoad(true);
+      void fetchAlbumPage();
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setHasTriggeredInitialLoad(true);
+          void fetchAlbumPage();
+          observer.disconnect();
+        }
+      },
+      { rootMargin: '400px 0px' }
     );
 
-    return () => unsubscribe();
-  }, []);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [fetchAlbumPage, hasTriggeredInitialLoad]);
 
   // Keep activeIndex valid if a photo is deleted while lightbox is open
   useEffect(() => {
@@ -358,12 +524,16 @@ export const SharedAlbumSection: React.FC = () => {
     const trimmedName = uploaderName.trim();
     const trimmedCaption = caption.trim();
 
-    if (trimmedName.length < 2 || trimmedName.length > 80) {
-      setFormError('Sila masukkan nama anda (2 hingga 80 aksara).');
+    if (
+      trimmedName.length < 2 ||
+      getUtf8ByteLength(trimmedName) < 2 ||
+      getUtf8ByteLength(trimmedName) > 80
+    ) {
+      setFormError('Sila masukkan nama anda (2 hingga 80 bait UTF-8).');
       return;
     }
-    if (trimmedCaption.length > 200) {
-      setFormError('Kapsyen tidak boleh melebihi 200 aksara.');
+    if (getUtf8ByteLength(trimmedCaption) > 200) {
+      setFormError('Kapsyen tidak boleh melebihi 200 bait UTF-8.');
       return;
     }
 
@@ -390,15 +560,43 @@ export const SharedAlbumSection: React.FC = () => {
 
     try {
       await setDoc(doc(db, 'shared_album_photos', photoId), payload);
+      const localNewPhoto: SharedAlbumPhoto = {
+        id: photoId,
+        uploaderName: trimmedName,
+        ...(trimmedCaption.length > 0 ? { caption: trimmedCaption } : {}),
+        imageDataUrl: previewPhoto.dataUrl,
+        width: previewPhoto.width,
+        height: previewPhoto.height,
+        createdAt: Timestamp.now(),
+      };
+      setPhotos((prev) => {
+        const nextList = [localNewPhoto, ...prev];
+        syncSessionSnapshot({
+          photos: nextList,
+          lastVisibleDoc,
+          hasMorePhotos,
+          fromCache: isShowingCachedData,
+          quotaWarning,
+        });
+        return nextList;
+      });
+      setLoadError('');
       setPreviewPhoto(null);
       setCaption('');
       setUploadSuccess(true);
     } catch (error) {
-      setFormError('Gambar gagal dimuat naik. Sila semak sambungan internet anda dan cuba lagi.');
-      try {
-        handleFirestoreError(error, OperationType.CREATE, `shared_album_photos/${photoId}`);
-      } catch {
-        // Logged by handleFirestoreError
+      const quotaHit = isQuotaExceededError(error);
+      setFormError(
+        quotaHit
+          ? 'Kuota harian pangkalan data sedang penuh buat sementara waktu. Sila cuba muat naik sebentar lagi.'
+          : 'Gambar gagal dimuat naik. Sila semak sambungan internet anda dan cuba lagi.'
+      );
+      if (!quotaHit) {
+        try {
+          handleFirestoreError(error, OperationType.CREATE, `shared_album_photos/${photoId}`);
+        } catch {
+          // Logged by handleFirestoreError
+        }
       }
     } finally {
       setSubmitting(false);
@@ -453,7 +651,17 @@ export const SharedAlbumSection: React.FC = () => {
     setDeletingId(photoId);
     try {
       await deleteDoc(doc(db, 'shared_album_photos', photoId));
-      setPhotos((prev) => prev.filter((item) => item.id !== photoId));
+      setPhotos((prev) => {
+        const nextList = prev.filter((item) => item.id !== photoId);
+        syncSessionSnapshot({
+          photos: nextList,
+          lastVisibleDoc,
+          hasMorePhotos,
+          fromCache: isShowingCachedData,
+          quotaWarning,
+        });
+        return nextList;
+      });
       setConfirmDeleteId(null);
     } catch (error) {
       setDeleteError(
@@ -473,6 +681,7 @@ export const SharedAlbumSection: React.FC = () => {
 
   return (
     <section
+      ref={sectionRef}
       id="galeri"
       aria-label="Galeri Kenangan Majlis — Album Foto Bersama"
       className="relative w-full py-6 sm:py-10 px-3 sm:px-6"
@@ -505,12 +714,38 @@ export const SharedAlbumSection: React.FC = () => {
 
             {/* Unboxed Metadata Line */}
             <div className="mt-3 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 font-body text-xs text-[#8E6D31] font-medium tabular-nums">
-              <span>{photos.length} foto dikongsi</span>
+              <span>
+                {loading
+                  ? 'Memuatkan foto...'
+                  : photos.length > 0
+                    ? isShowingCachedData
+                      ? `${photos.length} foto dipaparkan (cache tempatan)`
+                      : `${photos.length} foto dipaparkan`
+                    : quotaWarning
+                      ? 'Kuota bacaan harian penuh sementara'
+                      : loadError
+                        ? 'Sambungan pangkalan data terhad'
+                        : 'Galeri sedia dikongsi'}
+              </span>
               <span aria-hidden="true">·</span>
               <span>Terbuka untuk semua tetamu</span>
               <span aria-hidden="true">·</span>
-              <span>Kemaskini masa nyata</span>
+              <button
+                type="button"
+                onClick={() => void fetchAlbumPage({ forceServer: true })}
+                disabled={loading || loadingMore}
+                className="inline-flex items-center gap-1 underline decoration-[#C6A15B]/60 underline-offset-2 hover:text-[#064E3B] cursor-pointer disabled:opacity-50"
+              >
+                <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} aria-hidden="true" />
+                <span>Muat Semula</span>
+              </button>
             </div>
+
+            {quotaWarning && photos.length > 0 && (
+              <p className="mt-2 font-body text-[11px] text-[#8E6D31]">
+                Memaparkan salinan cache tempatan sementara kuota bacaan harian pangkalan data penuh. Semua foto sedia ada kekal selamat.
+              </p>
+            )}
 
             <RoyalDivider className="mt-4" />
 
@@ -814,7 +1049,7 @@ export const SharedAlbumSection: React.FC = () => {
 
           {/* Gallery Grid */}
           <div className="mt-9">
-            {loading ? (
+            {loading && photos.length === 0 ? (
               <div
                 className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5"
                 aria-busy="true"
@@ -826,9 +1061,26 @@ export const SharedAlbumSection: React.FC = () => {
                   />
                 ))}
               </div>
-            ) : loadError ? (
-              <div className="py-12 text-center font-body text-sm text-[#16261F]/75">
-                {loadError}
+            ) : loadError && photos.length === 0 ? (
+              <div className="py-10 px-4 text-center rounded-2xl border border-[#C6A15B]/55 bg-[#FAF7F0] max-w-xl mx-auto space-y-3 font-body">
+                <AlertCircle className="w-8 h-8 text-[#8E6D31] mx-auto" aria-hidden="true" />
+                <p className="text-sm font-semibold text-[#064E3B]">
+                  {quotaWarning
+                    ? 'Kuota Bacaan Harian Pangkalan Data Penuh Sementara'
+                    : 'Galeri Tidak Dapat Dimuatkan'}
+                </p>
+                <p className="text-xs sm:text-sm text-[#16261F]/80 leading-relaxed">
+                  {loadError}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => void fetchAlbumPage({ forceServer: true })}
+                  disabled={loading}
+                  className="min-h-[42px] px-5 py-2 rounded-xl bg-[#064E3B] text-[#E6CB8E] border border-[#C6A15B] text-xs font-semibold inline-flex items-center gap-2 hover:bg-[#043B2C] cursor-pointer disabled:opacity-50"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} aria-hidden="true" />
+                  <span>Cuba Muat Semula</span>
+                </button>
               </div>
             ) : photos.length === 0 ? (
               <div className="py-14 px-4 text-center rounded-2xl border border-[#C6A15B]/45 bg-[#FAF7F0]/80 space-y-3">
@@ -853,105 +1105,151 @@ export const SharedAlbumSection: React.FC = () => {
                 )}
               </div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5 sm:gap-5">
-                {photos.map((photo, index) => {
-                  const isConfirmingDelete = confirmDeleteId === photo.id;
-                  return (
-                    <figure
-                      key={photo.id}
-                      className="group relative flex flex-col rounded-2xl bg-[#FAF7F0] border border-[#C6A15B]/55 overflow-hidden shadow-sm hover:shadow-md transition-shadow"
-                    >
-                      {/* Clickable Photo Frame */}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setConfirmDeleteId(null);
-                          setDeleteError('');
-                          setActiveIndex(index);
-                        }}
-                        aria-label={`Lihat gambar penuh yang dikongsi oleh ${photo.uploaderName}`}
-                        className="relative aspect-[4/5] w-full overflow-hidden bg-[#EFE9DA] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#064E3B]"
+              <>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5 sm:gap-5">
+                  {photos.map((photo, index) => {
+                    const isConfirmingDelete = confirmDeleteId === photo.id;
+                    return (
+                      <figure
+                        key={photo.id}
+                        className="group relative flex flex-col rounded-2xl bg-[#FAF7F0] border border-[#C6A15B]/55 overflow-hidden shadow-sm hover:shadow-md transition-shadow"
                       >
-                        {!brokenImageIds[photo.id] && photo.imageDataUrl ? (
-                          <img
-                            src={photo.imageDataUrl}
-                            alt={`Kenangan majlis dikongsi oleh ${photo.uploaderName}${
-                              photo.caption ? ` — ${photo.caption}` : ''
-                            }`}
-                            loading="lazy"
-                            referrerPolicy="no-referrer"
-                            onError={() =>
-                              setBrokenImageIds((prev) => ({ ...prev, [photo.id]: true }))
-                            }
-                            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                        {/* Clickable Photo Frame */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setConfirmDeleteId(null);
+                            setDeleteError('');
+                            setActiveIndex(index);
+                          }}
+                          aria-label={`Lihat gambar penuh yang dikongsi oleh ${photo.uploaderName}`}
+                          className="relative aspect-[4/5] w-full overflow-hidden bg-[#EFE9DA] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#064E3B]"
+                        >
+                          {!brokenImageIds[photo.id] && photo.imageDataUrl ? (
+                            <img
+                              src={photo.imageDataUrl}
+                              alt={`Kenangan majlis dikongsi oleh ${photo.uploaderName}${
+                                photo.caption ? ` — ${photo.caption}` : ''
+                              }`}
+                              loading="lazy"
+                              referrerPolicy="no-referrer"
+                              onError={() =>
+                                setBrokenImageIds((prev) => ({ ...prev, [photo.id]: true }))
+                              }
+                              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                            />
+                          ) : (
+                            <div className="h-full w-full flex flex-col items-center justify-center p-4 text-center text-[#8E6D31]">
+                              <Images className="w-7 h-7 mb-1.5 opacity-75" aria-hidden="true" />
+                              <span className="font-body text-[11px] font-medium">
+                                Gambar tidak dapat dimuatkan
+                              </span>
+                            </div>
+                          )}
+                          <span
+                            aria-hidden="true"
+                            className="pointer-events-none absolute inset-0 shadow-[inset_0_0_18px_rgba(3,43,32,0.12)]"
                           />
-                        ) : (
-                          <div className="h-full w-full flex flex-col items-center justify-center p-4 text-center text-[#8E6D31]">
-                            <Images className="w-7 h-7 mb-1.5 opacity-75" aria-hidden="true" />
-                            <span className="font-body text-[11px] font-medium">
-                              Gambar tidak dapat dimuatkan
-                            </span>
-                          </div>
-                        )}
-                        <span
-                          aria-hidden="true"
-                          className="pointer-events-none absolute inset-0 shadow-[inset_0_0_18px_rgba(3,43,32,0.12)]"
-                        />
-                      </button>
+                        </button>
 
-                      {/* Archival Figure Caption */}
-                      <figcaption className="px-3 py-2.5 sm:px-3.5 sm:py-3 flex flex-col gap-0.5 flex-1">
-                        <div className="flex items-start justify-between gap-1.5">
-                          <span className="font-names text-base sm:text-[17px] font-bold text-[#064E3B] leading-snug truncate">
-                            {photo.uploaderName}
+                        {/* Archival Figure Caption */}
+                        <figcaption className="px-3 py-2.5 sm:px-3.5 sm:py-3 flex flex-col gap-0.5 flex-1">
+                          <div className="flex items-start justify-between gap-1.5">
+                            <span className="font-names text-base sm:text-[17px] font-bold text-[#064E3B] leading-snug truncate">
+                              {photo.uploaderName}
+                            </span>
+
+                            {isVerifiedHost && !isConfirmingDelete && (
+                              <button
+                                type="button"
+                                onClick={() => setConfirmDeleteId(photo.id)}
+                                aria-label={`Padam foto oleh ${photo.uploaderName}`}
+                                className="min-h-[36px] min-w-[36px] -mr-1.5 -mt-1 rounded-lg text-[#8E6D31] hover:text-red-700 hover:bg-red-50 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                              >
+                                <Trash2 className="w-4 h-4" aria-hidden="true" />
+                              </button>
+                            )}
+                          </div>
+
+                          {photo.caption && (
+                            <p className="font-names italic text-sm text-[#16261F]/85 leading-snug line-clamp-2">
+                              &ldquo;{photo.caption}&rdquo;
+                            </p>
+                          )}
+
+                          <span className="mt-auto pt-1 font-body text-[10px] sm:text-[11px] text-[#8E6D31]/90">
+                            {formatPhotoDate(photo.createdAt)}
                           </span>
 
-                          {isVerifiedHost && !isConfirmingDelete && (
-                            <button
-                              type="button"
-                              onClick={() => setConfirmDeleteId(photo.id)}
-                              aria-label={`Padam foto oleh ${photo.uploaderName}`}
-                              className="min-h-[36px] min-w-[36px] -mr-1.5 -mt-1 rounded-lg text-[#8E6D31] hover:text-red-700 hover:bg-red-50 flex items-center justify-center transition-colors cursor-pointer shrink-0"
-                            >
-                              <Trash2 className="w-4 h-4" aria-hidden="true" />
-                            </button>
+                          {isVerifiedHost && isConfirmingDelete && (
+                            <div className="mt-2 pt-2 border-t border-[#C6A15B]/30 flex items-center justify-between gap-2 font-body">
+                              <button
+                                type="button"
+                                onClick={() => handleDeletePhoto(photo.id)}
+                                disabled={deletingId === photo.id}
+                                className="min-h-[36px] px-2.5 py-1 rounded-lg bg-red-700 text-white text-[11px] font-semibold hover:bg-red-800 transition-colors cursor-pointer disabled:opacity-60"
+                              >
+                                {deletingId === photo.id ? 'Memadam...' : 'Sahkan Padam'}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setConfirmDeleteId(null)}
+                                className="min-h-[36px] px-2.5 py-1 rounded-lg text-[11px] font-medium text-[#16261F]/75 hover:bg-[#EFE9DA] transition-colors cursor-pointer"
+                              >
+                                Batal
+                              </button>
+                            </div>
                           )}
-                        </div>
+                        </figcaption>
+                      </figure>
+                    );
+                  })}
+                </div>
 
-                        {photo.caption && (
-                          <p className="font-names italic text-sm text-[#16261F]/85 leading-snug line-clamp-2">
-                            &ldquo;{photo.caption}&rdquo;
-                          </p>
-                        )}
+                {loadError && photos.length > 0 && (
+                  <div
+                    role="status"
+                    className="mt-6 mx-auto max-w-xl rounded-xl border border-[#C6A15B]/60 bg-[#FAF7F0] px-4 py-3 text-center font-body space-y-2"
+                  >
+                    <p className="text-xs font-semibold text-[#064E3B]">
+                      {quotaWarning
+                        ? 'Kuota Bacaan Harian Pangkalan Data Penuh Sementara'
+                        : 'Sebahagian Foto Tambahan Tidak Dapat Dimuatkan'}
+                    </p>
+                    <p className="text-xs text-[#16261F]/75 leading-relaxed">{loadError}</p>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        void fetchAlbumPage({
+                          cursor: hasMorePhotos ? lastVisibleDoc : null,
+                          forceServer: true,
+                        })
+                      }
+                      disabled={loading || loadingMore}
+                      className="min-h-[38px] px-4 py-1.5 rounded-lg bg-[#064E3B] text-[#E6CB8E] border border-[#C6A15B] text-xs font-semibold inline-flex items-center gap-1.5 hover:bg-[#043B2C] cursor-pointer disabled:opacity-50"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 ${loadingMore ? 'animate-spin' : ''}`} aria-hidden="true" />
+                      <span>Cuba Muat Semula</span>
+                    </button>
+                  </div>
+                )}
 
-                        <span className="mt-auto pt-1 font-body text-[10px] sm:text-[11px] text-[#8E6D31]/90">
-                          {formatPhotoDate(photo.createdAt)}
-                        </span>
-
-                        {isVerifiedHost && isConfirmingDelete && (
-                          <div className="mt-2 pt-2 border-t border-[#C6A15B]/30 flex items-center justify-between gap-2 font-body">
-                            <button
-                              type="button"
-                              onClick={() => handleDeletePhoto(photo.id)}
-                              disabled={deletingId === photo.id}
-                              className="min-h-[36px] px-2.5 py-1 rounded-lg bg-red-700 text-white text-[11px] font-semibold hover:bg-red-800 transition-colors cursor-pointer disabled:opacity-60"
-                            >
-                              {deletingId === photo.id ? 'Memadam...' : 'Sahkan Padam'}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setConfirmDeleteId(null)}
-                              className="min-h-[36px] px-2.5 py-1 rounded-lg text-[11px] font-medium text-[#16261F]/75 hover:bg-[#EFE9DA] transition-colors cursor-pointer"
-                            >
-                              Batal
-                            </button>
-                          </div>
-                        )}
-                      </figcaption>
-                    </figure>
-                  );
-                })}
-              </div>
+                {hasMorePhotos && (
+                  <div className="mt-7 text-center font-body">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        void fetchAlbumPage({ cursor: lastVisibleDoc })
+                      }
+                      disabled={loadingMore}
+                      className="min-h-[44px] px-6 py-2.5 rounded-xl border border-[#C6A15B] bg-[#FAF7F0] text-[#064E3B] text-xs sm:text-sm font-semibold hover:bg-[#EFE9DA] transition-colors cursor-pointer disabled:opacity-60 inline-flex items-center gap-2"
+                    >
+                      <Images className="w-4 h-4 text-[#8E6D31]" aria-hidden="true" />
+                      <span>{loadingMore ? 'Memuatkan Foto...' : 'Muat Lebih Banyak Foto'}</span>
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>

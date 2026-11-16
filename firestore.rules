@@ -58,7 +58,7 @@ service cloud.firestore {
     // Public guestbook wishes: readable by invitation guests, strict validated creates, host-only delete
     match /public_wishes/{wishId} {
       allow get: if isValidId(wishId);
-      allow list: if true;
+      allow list: if request.query.limit != null && request.query.limit <= 15;
       allow create: if isValidId(wishId) && isValidWish(incoming());
       allow update: if false;
       allow delete: if isValidId(wishId) && isHostAdmin();
@@ -76,7 +76,7 @@ service cloud.firestore {
     // Shared wedding album photos: viewable & uploadable by all invitation guests, deletable ONLY by verified host
     match /shared_album_photos/{photoId} {
       allow get: if isValidId(photoId);
-      allow list: if true;
+      allow list: if request.query.limit != null && request.query.limit <= 12;
       allow create: if isValidId(photoId) && isValidAlbumPhoto(incoming());
       allow update: if false;
       allow delete: if isValidId(photoId) && isHostAdmin();
