@@ -1,11 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { ExternalLink, HeartHandshake, Lock } from 'lucide-react';
+import { ChevronDown, ExternalLink, HeartHandshake, Lock, ShieldCheck } from 'lucide-react';
 import { WEDDING_CONFIG } from '../config/weddingConfig';
 import { AwanLaratCorner, RoyalDivider } from './RoyalOrnaments';
+import { OwnerRsvpDashboard } from './OwnerRsvpDashboard';
 
 export const RsvpSection: React.FC = () => {
   const googleFormUrl = WEDDING_CONFIG.rsvpGoogleForms.publicFormUrl;
+  const [ownerPortalOpen, setOwnerPortalOpen] = useState(false);
 
   return (
     <section
@@ -26,7 +28,7 @@ export const RsvpSection: React.FC = () => {
         <AwanLaratCorner position="bl" className="absolute bottom-3.5 left-3.5 w-10 h-10 sm:w-14 sm:h-14 text-[#C6A15B]" />
         <AwanLaratCorner position="br" className="absolute bottom-3.5 right-3.5 w-10 h-10 sm:w-14 sm:h-14 text-[#C6A15B]" />
 
-        <div className="relative z-10 max-w-xl mx-auto text-center">
+        <div className="relative z-10 max-w-2xl mx-auto text-center">
           {/* Header */}
           <p className="font-script text-2xl sm:text-3xl text-[#8E6D31]">
             Sahkan Kehadiran Anda
@@ -42,7 +44,7 @@ export const RsvpSection: React.FC = () => {
           </div>
 
           {/* Required Message Above RSVP Button */}
-          <p className="mt-5 font-body text-sm sm:text-base text-[#16261F]/90 leading-relaxed text-balance">
+          <p className="mt-5 font-body text-sm sm:text-base text-[#16261F]/90 leading-relaxed text-balance max-w-xl mx-auto">
             Mohon sahkan kehadiran anda melalui pautan RSVP di bawah bagi membantu pihak keluarga membuat persiapan majlis.
           </p>
 
@@ -76,6 +78,27 @@ export const RsvpSection: React.FC = () => {
             <span>
               Maklumat tetamu adalah sulit dan direkodkan secara peribadi melalui borang rasmi.
             </span>
+          </div>
+
+          {/* Owner-Only RSVP Dashboard Portal Trigger */}
+          <div className="mt-6 pt-5 border-t border-[#C6A15B]/30">
+            <button
+              type="button"
+              onClick={() => setOwnerPortalOpen((prev) => !prev)}
+              aria-expanded={ownerPortalOpen}
+              className="min-h-[42px] px-4 py-2 rounded-xl border border-[#C6A15B]/65 bg-[#FAF7F0]/80 text-[#064E3B] font-body text-xs font-semibold hover:bg-[#EFE9DA] transition-colors cursor-pointer inline-flex items-center justify-center gap-2"
+            >
+              <ShieldCheck className="w-4 h-4 text-[#8E6D31]" aria-hidden="true" />
+              <span>Akses Pemilik · Dashboard RSVP</span>
+              <ChevronDown
+                className={`w-3.5 h-3.5 text-[#8E6D31] transition-transform duration-200 ${
+                  ownerPortalOpen ? 'rotate-180' : ''
+                }`}
+                aria-hidden="true"
+              />
+            </button>
+
+            {ownerPortalOpen && <OwnerRsvpDashboard />}
           </div>
         </div>
       </motion.div>

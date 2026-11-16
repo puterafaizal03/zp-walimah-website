@@ -260,8 +260,22 @@ export const GuestbookSection: React.FC = () => {
     setAuthLoading(true);
     try {
       await signInWithPopup(auth, googleProvider);
-    } catch {
-      setAuthError('Log masuk dibatalkan atau gagal. Sila cuba lagi.');
+    } catch (err: unknown) {
+      const code =
+        typeof err === 'object' && err !== null && 'code' in err
+          ? String((err as { code?: unknown }).code)
+          : '';
+      if (code === 'auth/unauthorized-domain') {
+        setAuthError(
+          `Domain (${window.location.hostname}) belum didaftarkan dalam Firebase Console -> Authentication -> Authorized domains.`
+        );
+      } else if (code === 'auth/popup-blocked') {
+        setAuthError(
+          'Tetingkap log masuk Google disekat oleh pelayar. Sila benarkan pop-up dan cuba lagi.'
+        );
+      } else {
+        setAuthError('Log masuk dibatalkan atau gagal. Sila cuba lagi.');
+      }
     } finally {
       setAuthLoading(false);
     }

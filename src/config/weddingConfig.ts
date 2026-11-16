@@ -25,6 +25,18 @@ export interface GoogleFormsEntryMap {
   wishes: string;
 }
 
+export interface FamilyContact {
+  label: string;
+  displayNumber: string;
+  telHref: string;
+  waHref: string;
+}
+
+export interface FamilyContactGroup {
+  heading: string;
+  contacts: FamilyContact[];
+}
+
 export interface WeddingConfig {
   designIdentity: {
     themeName: string;
@@ -56,6 +68,10 @@ export interface WeddingConfig {
   groomsParents: {
     fatherName: string;
     motherName: string;
+  };
+  familyContacts: {
+    brideSide: FamilyContactGroup;
+    groomSide: FamilyContactGroup;
   };
   invitationCopy: {
     gratitudeHeading: string;
@@ -128,10 +144,46 @@ export const WEDDING_CONFIG: WeddingConfig = {
     fatherName: 'MOHD RAFAEL BIN ABDULLAH',
     motherName: 'ROSMANI BINTI TAIB',
   },
+  familyContacts: {
+    brideSide: {
+      heading: 'CONTACT PENGANTIN BELAH PEREMPUAN',
+      contacts: [
+        {
+          label: 'Ayah',
+          displayNumber: '+60 19-702 6125',
+          telHref: 'tel:+60197026125',
+          waHref: 'https://wa.me/60197026125',
+        },
+        {
+          label: 'Ibu',
+          displayNumber: '0135471975',
+          telHref: 'tel:+60135471975',
+          waHref: 'https://wa.me/60135471975',
+        },
+      ],
+    },
+    groomSide: {
+      heading: 'CONTACT PENGANTIN BELAH LELAKI',
+      contacts: [
+        {
+          label: 'Along',
+          displayNumber: '+60 12-743 4378',
+          telHref: 'tel:+60127434378',
+          waHref: 'https://wa.me/60127434378',
+        },
+        {
+          label: 'Kak Long Ayu',
+          displayNumber: '+60 17-743 4318',
+          telHref: 'tel:+60177434318',
+          waHref: 'https://wa.me/60177434318',
+        },
+      ],
+    },
+  },
   invitationCopy: {
     gratitudeHeading: 'DENGAN PENUH KESYUKURAN',
     familyInvitationText:
-      'Dengan penuh kesyukuran ke hadrat Allah SWT, kami dengan segala hormat dan sukacitanya menjemput Tuan/Puan serta seisi keluarga untuk hadir memeriahkan majlis walimatulurus putera dan puteri kami.',
+      'Dengan penuh kesyukuran ke hadrat Allah SWT, kami dengan segala hormat dan sukacitanya menjemput Tuan/Puan serta seisi keluarga untuk hadir memeriahkan majlis walimatulurus puteri kami.',
   },
   event: {
     title: 'MAJLIS WALIMATULURUS',

@@ -207,6 +207,8 @@ export const SharedAlbumSection: React.FC = () => {
   const [authError, setAuthError] = useState('');
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState('');
+  const [brokenImageIds, setBrokenImageIds] = useState<Record<string, boolean>>({});
 
   const isVerifiedHost = Boolean(
     currentUser?.emailVerified &&
@@ -403,14 +405,37 @@ export const SharedAlbumSection: React.FC = () => {
     }
   };
 
+  const handleClearSelectedPhoto = () => {
+    setPreviewPhoto(null);
+    setFormError('');
+    setUploadSuccess(false);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const handleHostSignIn = async () => {
     setAuthError('');
     setAuthLoading(true);
     try {
       await signInWithPopup(auth, googleProvider);
       setAuthPanelOpen(false);
-    } catch {
-      setAuthError('Log masuk dibatalkan atau gagal. Sila cuba lagi.');
+    } catch (err: unknown) {
+      const code =
+        typeof err === 'object' && err !== null && 'code' in err
+          ? String((err as { code?: unknown }).code)
+          : '';
+      if (code === 'auth/unauthorized-domain') {
+        setAuthError(
+          `Domain (${window.location.hostname}) belum didaftarkan dalam Firebase Console -> Authentication -> Authorized domains.`
+        );
+      } else if (code === 'auth/popup-blocked') {
+        setAuthError(
+          'Tetingkap log masuk Google disekat oleh pelayar. Sila benarkan pop-up untuk laman ini dan cuba lagi.'
+        );
+      } else {
+        setAuthError('Log masuk dibatalkan atau gagal. Sila cuba lagi.');
+      }
     } finally {
       setAuthLoading(false);
     }
@@ -418,16 +443,22 @@ export const SharedAlbumSection: React.FC = () => {
 
   const handleHostSignOut = async () => {
     setAuthError('');
+    setDeleteError('');
     setConfirmDeleteId(null);
     await signOut(auth);
   };
 
   const handleDeletePhoto = async (photoId: string) => {
+    setDeleteError('');
     setDeletingId(photoId);
     try {
       await deleteDoc(doc(db, 'shared_album_photos', photoId));
+      setPhotos((prev) => prev.filter((item) => item.id !== photoId));
       setConfirmDeleteId(null);
     } catch (error) {
+      setDeleteError(
+        'Gambar gagal dipadam. Pastikan anda log masuk menggunakan akaun Google pengantin yang dibenarkan serta sambungan internet aktif.'
+      );
       try {
         handleFirestoreError(error, OperationType.DELETE, `shared_album_photos/${photoId}`);
       } catch {
@@ -661,7 +692,7 @@ export const SharedAlbumSection: React.FC = () => {
                             </label>
                             <button
                               type="button"
-                              onClick={() => setPreviewPhoto(null)}
+                              onClick={handleClearSelectedPhoto}
                               className="min-h-[40px] px-3.5 py-2 rounded-lg text-xs font-medium text-[#16261F]/70 hover:text-red-800 transition-colors cursor-pointer"
                             >
                               Buang
@@ -760,6 +791,27 @@ export const SharedAlbumSection: React.FC = () => {
             )}
           </AnimatePresence>
 
+          {/* Delete Error Banner */}
+          {deleteError && (
+            <div
+              role="alert"
+              className="mt-6 mx-auto max-w-2xl rounded-xl border border-red-700/30 bg-red-50 px-4 py-3 text-xs sm:text-sm font-medium text-red-900 flex items-center justify-between gap-3 font-body"
+            >
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" aria-hidden="true" />
+                <span>{deleteError}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDeleteError('')}
+                aria-label="Tutup amaran padam"
+                className="p-1 rounded-lg hover:bg-red-100 cursor-pointer shrink-0"
+              >
+                <X className="w-4 h-4" aria-hidden="true" />
+              </button>
+            </div>
+          )}
+
           {/* Gallery Grid */}
           <div className="mt-9">
             {loading ? (
@@ -814,20 +866,33 @@ export const SharedAlbumSection: React.FC = () => {
                         type="button"
                         onClick={() => {
                           setConfirmDeleteId(null);
+                          setDeleteError('');
                           setActiveIndex(index);
                         }}
                         aria-label={`Lihat gambar penuh yang dikongsi oleh ${photo.uploaderName}`}
                         className="relative aspect-[4/5] w-full overflow-hidden bg-[#EFE9DA] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#064E3B]"
                       >
-                        <img
-                          src={photo.imageDataUrl}
-                          alt={`Kenangan majlis dikongsi oleh ${photo.uploaderName}${
-                            photo.caption ? ` — ${photo.caption}` : ''
-                          }`}
-                          loading="lazy"
-                          referrerPolicy="no-referrer"
-                          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-                        />
+                        {!brokenImageIds[photo.id] && photo.imageDataUrl ? (
+                          <img
+                            src={photo.imageDataUrl}
+                            alt={`Kenangan majlis dikongsi oleh ${photo.uploaderName}${
+                              photo.caption ? ` — ${photo.caption}` : ''
+                            }`}
+                            loading="lazy"
+                            referrerPolicy="no-referrer"
+                            onError={() =>
+                              setBrokenImageIds((prev) => ({ ...prev, [photo.id]: true }))
+                            }
+                            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                          />
+                        ) : (
+                          <div className="h-full w-full flex flex-col items-center justify-center p-4 text-center text-[#8E6D31]">
+                            <Images className="w-7 h-7 mb-1.5 opacity-75" aria-hidden="true" />
+                            <span className="font-body text-[11px] font-medium">
+                              Gambar tidak dapat dimuatkan
+                            </span>
+                          </div>
+                        )}
                         <span
                           aria-hidden="true"
                           className="pointer-events-none absolute inset-0 shadow-[inset_0_0_18px_rgba(3,43,32,0.12)]"
@@ -1021,6 +1086,16 @@ export const SharedAlbumSection: React.FC = () => {
                   )
                 )}
               </div>
+
+              {deleteError && (
+                <div
+                  role="alert"
+                  className="mt-2 rounded-xl border border-red-400/60 bg-red-950/80 px-3.5 py-2 text-xs text-red-100 inline-flex items-center gap-2"
+                >
+                  <AlertCircle className="w-4 h-4 shrink-0" aria-hidden="true" />
+                  <span>{deleteError}</span>
+                </div>
+              )}
             </div>
           </motion.div>
         )}
